@@ -1,0 +1,2111 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>부강테크 Claude 프롬프트 라이브러리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+<style>
+/* Layout: 위에 ‘교육 중 / 교육 후’ 두 트랙 타일, 아래는 왼쪽 필터 레일 + 카드 그리드. 트랙은 카드 머리 색(오키드=교안 실습, 청록=업무 복귀)과 리본 문구로 구분한다. */
+:root {
+  --bg: #eef1f0; --surface: #ffffff; --sunk: #e4e9e7; --ink: #15201f; --muted: #566664; --line: #d0d9d6;
+  --edu: #7a3d86; --edu-head: #f2e3f3; --edu-soft: #ead2ec;
+  --work: #0b6a63; --work-head: #d9ecea; --work-soft: #cfe7e3;
+  --on-accent: #ffffff; --amber: #9a5b08; --amber-soft: #f6e7cf; --cust: #a4471c;
+  --ph: #fff1c2; --ph-ink: #5a4100;
+  --f-display: "Gothic A1", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-code: "Nanum Gothic Coding", "D2Coding", ui-monospace, "Malgun Gothic", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1514; --surface: #151f1e; --sunk: #1c2827; --ink: #e3ecea; --muted: #9db0ad; --line: #2b3a38;
+  --edu: #dba8e3; --edu-head: #2b2030; --edu-soft: #3a2a40;
+  --work: #5cc8bb; --work-head: #16302d; --work-soft: #1d3d39;
+  --on-accent: #0b1514; --amber: #e3a95a; --amber-soft: #33270f; --cust: #f0a275;
+  --ph: #3d3412; --ph-ink: #ffe39a; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1514; --surface: #151f1e; --sunk: #1c2827; --ink: #e3ecea; --muted: #9db0ad; --line: #2b3a38;
+  --edu: #dba8e3; --edu-head: #2b2030; --edu-soft: #3a2a40;
+  --work: #5cc8bb; --work-head: #16302d; --work-soft: #1d3d39;
+  --on-accent: #0b1514; --amber: #e3a95a; --amber-soft: #33270f; --cust: #f0a275;
+  --ph: #3d3412; --ph-ink: #ffe39a; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; word-break: keep-all; overflow-wrap: break-word; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; }
+.top { display: grid; gap: 12px; }
+.eyebrow { font-size: 12.5px; letter-spacing: .06em; color: var(--muted); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.15; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 66ch; }
+.tracks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.trk { font: inherit; text-align: left; cursor: pointer; border-radius: 12px; padding: 16px 18px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); display: grid; gap: 4px; min-width: 0; }
+.trk b { font-family: var(--f-display); font-size: 18px; }
+.trk .num { font-family: var(--f-display); font-size: 30px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.trk span { font-size: 13.5px; color: var(--muted); }
+.trk.edu { background: var(--edu-head); }
+.trk.edu .num, .trk.edu b { color: var(--edu); }
+.trk.work { background: var(--work-head); }
+.trk.work .num, .trk.work b { color: var(--work); }
+.trk[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink) inset; }
+.trk:focus-visible { outline: 2px solid var(--work); outline-offset: 2px; }
+.rules { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.rules li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; font-size: 14px; display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+.rules b { font-family: var(--f-code); }
+.files { margin-top: 26px; display: grid; gap: 12px; }
+.files h2, .ghead h2 { font-family: var(--f-display); font-weight: 700; font-size: 20px; margin: 0; }
+.files .sub { margin: 0; color: var(--muted); font-size: 14px; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+.fcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.fkick { font-size: 12px; font-weight: 700; color: var(--cust); letter-spacing: .04em; }
+.fcard h3 { margin: 0; font-size: 17px; font-family: var(--f-display); overflow-wrap: anywhere; }
+.fsmall { margin: 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.fsmall b { color: var(--ink); }
+blockquote { margin: 0; padding: 10px 12px; background: var(--edu-head); border-radius: 8px; font-size: 13.5px; display: grid; gap: 4px; }
+blockquote cite { font-style: normal; font-size: 12px; color: var(--muted); }
+.fbtn { font: inherit; font-size: 13px; font-weight: 700; border: 1.5px solid var(--cust); color: var(--cust); background: transparent; border-radius: 7px; padding: 6px 12px; cursor: pointer; justify-self: start; }
+.fbtn.sm { font-weight: 500; padding: 3px 9px; border-color: var(--line); color: var(--ink); }
+.vlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vlist li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 13.5px; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 8px; }
+.vlist li span { color: var(--muted); font-size: 12.8px; flex: 1 1 260px; min-width: 0; }
+.layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 28px; margin-top: 28px; align-items: start; }
+.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 16px; max-height: calc(100vh - 32px); overflow: auto; padding-right: 4px; }
+.rail h4 { margin: 0 0 7px; font-size: 12px; letter-spacing: .06em; color: var(--muted); font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.rail h4 i { font-style: normal; font-size: 11px; padding: 0 6px; border-radius: 4px; color: var(--on-accent); }
+.rail h4 i.edu { background: var(--edu); } .rail h4 i.work { background: var(--work); }
+.search { width: 100%; font: inherit; font-size: 15px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.stage { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.stage .arrow { color: var(--muted); font-size: 12px; }
+.chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; text-align: left; }
+.chip .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip[aria-pressed="true"] .n { color: var(--bg); }
+.chip.unit[aria-pressed="true"], .chip.fk[aria-pressed="true"], .chip.ft[aria-pressed="true"] { background: var(--edu); border-color: var(--edu); color: var(--on-accent); }
+.chip.cat[aria-pressed="true"] { background: var(--work); border-color: var(--work); color: var(--on-accent); }
+.chip.unit[aria-pressed="true"] .n, .chip.fk[aria-pressed="true"] .n, .chip.cat[aria-pressed="true"] .n { color: var(--on-accent); }
+.toggle { display: flex; gap: 8px; align-items: center; font-size: 13.5px; cursor: pointer; }
+.toggles { display: grid; gap: 5px; }
+.bulk { display: flex; gap: 8px; flex-wrap: wrap; }
+.bulk button, .reset { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+.reset { border: none; background: none; color: var(--work); text-decoration: underline; padding: 0; justify-self: start; }
+.count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.search:focus-visible, .chip:focus-visible, .copy:focus-visible, .more:focus-visible, .fbtn:focus-visible, .bulk button:focus-visible, .bridge:focus-visible { outline: 2px solid var(--work); outline-offset: 2px; }
+.list { display: grid; gap: 34px; min-width: 0; }
+.divider { display: flex; align-items: center; gap: 12px; font-family: var(--f-display); font-weight: 800; font-size: 15px; color: var(--work); }
+.divider::before, .divider::after { content: ""; flex: 1; border-top: 2px dashed var(--line); }
+.divider.edu { color: var(--edu); }
+.group { display: grid; gap: 14px; }
+.ghead { display: grid; gap: 8px; }
+.ghead h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.ghead .n { font-family: var(--f-body); font-size: 13px; color: var(--muted); font-weight: 500; }
+.gk { font-family: var(--f-body); font-size: 12.5px; font-weight: 700; color: var(--on-accent); border-radius: 5px; padding: 1px 8px; }
+.gk.edu { background: var(--edu); } .gk.work { background: var(--work); }
+.bridges { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.bl { font-size: 12px; font-weight: 700; color: var(--work); margin-right: 2px; }
+.bridge { color: var(--ink); text-decoration: none; border: 1px solid var(--work-soft); background: var(--work-head); border-radius: 999px; padding: 2px 10px; }
+.bridge b { font-family: var(--f-code); color: var(--work); font-size: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-width: 0; scroll-margin-top: 16px; }
+.card.flash { box-shadow: 0 0 0 3px var(--work); }
+.card-h { display: grid; gap: 7px; padding: 16px 20px 14px; }
+.card.edu .card-h { background: var(--edu-head); }
+.card.work .card-h { background: var(--work-head); }
+.card-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rib { font-size: 12px; font-weight: 700; color: var(--on-accent); border-radius: 999px; padding: 1px 9px; }
+.rib.edu { background: var(--edu); } .rib.work { background: var(--work); }
+.tagid { font-family: var(--f-code); font-size: 12px; font-weight: 700; color: var(--muted); margin-left: auto; }
+.newb { font-size: 11.5px; font-weight: 700; color: var(--amber); background: var(--amber-soft); border-radius: 999px; padding: 1px 8px; }
+.card h3 { font-family: var(--f-display); font-weight: 700; font-size: 19px; line-height: 1.35; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.card .when { margin: 0; font-size: 13.5px; color: var(--muted); }
+.card-b { display: grid; gap: 11px; padding: 14px 20px 16px; }
+.meta, .meta2 { display: flex; flex-wrap: wrap; gap: 6px; }
+.tool { font-size: 12.5px; padding: 1px 8px; border-radius: 999px; background: var(--sunk); }
+.sens { font-size: 12.5px; padding: 1px 8px; border-radius: 999px; }
+.sens.in { background: var(--amber-soft); color: var(--amber); }
+.sens.ok { background: var(--work-soft); color: var(--work); }
+.cfile { margin: 0; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; overflow-wrap: anywhere; }
+.cfb { font-size: 11.5px; font-weight: 700; color: var(--bg); background: var(--cust); border-radius: 4px; padding: 1px 6px; }
+.where { margin: 0; font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: baseline; }
+.where b { flex: 0 0 auto; font-size: 11.5px; color: var(--edu); background: var(--edu-soft); border-radius: 4px; padding: 0 6px; }
+.flow { display: grid; gap: 10px; margin-top: 18px; }
+.flow h2 { font-family: var(--f-display); font-size: 20px; margin: 0; }
+.flow .sub { margin: 0; color: var(--muted); font-size: 14px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.step { width: 100%; height: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--edu-head); border: 1px solid var(--edu-soft); border-radius: 10px; padding: 12px 14px; display: grid; gap: 3px; cursor: pointer; }
+.step code { font-family: var(--f-code); font-size: 12px; color: var(--edu); }
+.step b { font-size: 15px; }
+.step span { font-size: 12.8px; color: var(--muted); }
+.step:focus-visible { outline: 2px solid var(--edu); outline-offset: 2px; }
+.worknote { margin: -18px 0 0; font-size: 13.5px; color: var(--muted); text-align: center; }
+.fuse { display: grid; gap: 5px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12.8px; }
+.frow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fb { font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.fb.cust { background: var(--cust); color: var(--bg); }
+.fb.virt { border: 1px solid var(--muted); color: var(--muted); }
+.fb.none { border: 1px dashed var(--line); color: var(--muted); font-weight: 500; }
+.fname { font-weight: 500; overflow-wrap: anywhere; }
+.fnote { color: var(--muted); }
+.prompt { position: relative; background: var(--sunk); border-radius: 9px; padding: 12px 14px; max-height: 8.6em; overflow: hidden; min-width: 0; }
+.prompt::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3.2em; background: linear-gradient(to bottom, transparent, var(--sunk)); pointer-events: none; }
+.prompt[data-open="true"] { max-height: none; }
+.prompt[data-open="true"]::after { display: none; }
+.prompt pre { margin: 0; font-family: var(--f-code); font-size: 13.5px; line-height: 1.75; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; color: var(--ink); }
+mark.ph { background: var(--ph); color: var(--ph-ink); border-radius: 3px; padding: 0 2px; }
+.check { margin: 0; font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; }
+.k { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--amber); border: 1px solid var(--amber); border-radius: 4px; padding: 0 6px; line-height: 1.7; height: fit-content; margin-top: 1px; }
+.actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.more { font: inherit; font-size: 14px; font-weight: 700; background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 7px; padding: 7px 12px; cursor: pointer; }
+.more .lines { font-weight: 400; color: var(--muted); font-size: 12.5px; margin-left: 4px; }
+.copy { font: inherit; font-size: 14px; font-weight: 700; border: none; border-radius: 7px; padding: 8px 16px; cursor: pointer; color: var(--on-accent); }
+.card.edu .copy { background: var(--edu); } .card.work .copy { background: var(--work); }
+.copy.done { background: var(--ink) !important; color: var(--bg); }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 24px; color: var(--muted); }
+.foot { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: static; max-height: none; overflow: visible; }
+  .tracks, .rules { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } .card-h, .card-b { padding-inline: 16px; } }
+@media (prefers-reduced-motion: no-preference) { .copy, .trk { transition: background .15s, border-color .15s; } }
+</style>
+</head><body><div class="wrap">
+  <header class="top">
+    <div class="eyebrow">㈜부강테크 · 휴넷 인재키움 Claude 과정</div>
+    <h1>부강테크 Claude 프롬프트 라이브러리</h1>
+    <p class="lede">교육 중 교안으로 실습한 프롬프트와, 교육 후 업무에 돌아가 바로 쓰는 프롬프트를 한 곳에 모았습니다. 기준과 양식은 프로젝트·스킬에 한 번만 넣고, 같은 형식의 결과물을 반복해서 만드는 것이 목표입니다. 보라색 카드는 교안 실습, 청록색 카드는 업무 복귀용입니다. 카드를 펼쳐 보고 노란색 [대괄호]만 바꿔 복사하세요.</p>
+    <div class="tracks" role="group" aria-label="보기 선택">
+      <button type="button" class="trk all" data-track="" aria-pressed="true"><b>전체</b><span class="num">68</span><span>교안 실습과 업무 복귀 프롬프트를 함께 봅니다</span></button>
+      <button type="button" class="trk edu" data-track="edu" aria-pressed="false"><b>교육 중 · 교안 실습</b><span class="num">30</span><span>소화조 교반기 교체 사업 하나를 교시 순서대로 끝까지 따라갑니다 (고객사 자료 사용 15개)</span></button>
+      <button type="button" class="trk work" data-track="work" aria-pressed="false"><b>교육 후 · 업무 복귀</b><span class="num">38</span><span>시방·제안 검토부터 견적·보고·자동화까지 실제 업무에 씁니다 (추가 제안 25개)</span></button>
+    </div>
+    <ol class="rules">
+      <li><b>1</b><span>[대괄호]를 내 자료와 조건으로 바꾼다. 지침의 [역할]·[판정] 같은 칸 이름은 그대로 둔다</span></li>
+      <li><b>2</b><span>‘내부 자료’ 표시는 회사가 허용한 계정·환경에서만 쓴다</span></li>
+      <li><b>3</b><span>숫자·날짜·조항은 원문과 대조한 뒤 사람이 승인한다</span></li>
+    </ol>
+    <section class="flow" aria-labelledby="h-flow">
+      <h2 id="h-flow">한 번 적고, 같은 형식으로 반복</h2>
+      <p class="sub">2~4교시는 가상 사업 하나(소화조 교반기 교체)를 끝까지 따라갑니다. 단계를 누르면 해당 프롬프트를 찾아 줍니다.</p>
+      <ol class="steps">
+        <li><button type="button" class="step" data-q="s2-p02"><code>2교시 · 51~52쪽</code><b>검토 프로젝트 지침</b><span>판정 4가지 · 일곱 개 열</span></button></li>
+        <li><button type="button" class="step" data-q="시방서"><code>2교시 · 58~62쪽</code><b>요구사항 → 제안서 대조</b><span>같은 양식으로 미흡·누락</span></button></li>
+        <li><button type="button" class="step" data-q="s3-p"><code>3교시 · 75~77쪽</code><b>견적서 3건 비교</b><span>짧은 지시, 같은 양식</span></button></li>
+        <li><button type="button" class="step" data-q="quote-review"><code>4교시 · 107~111쪽</code><b>견적 검토 스킬</b><span>업체마다 같은 검토서</span></button></li>
+        <li><button type="button" class="step" data-q="claude.md"><code>5교시 · 교육 후</code><b>클로드 코드로</b><span>지침이 CLAUDE.md로 이어짐</span></button></li>
+      </ol>
+    </section>
+  </header>
+  <section class="files" id="files" data-track="edu" aria-labelledby="h-files">
+    <h2 id="h-files">고객사 제공 파일로 하는 실습</h2>
+    <p class="sub">㈜부강테크가 교육용으로 보내 준 사업 자료(가상) 3종이 어느 교시·어느 프롬프트에 쓰이는지 정리했습니다. 버튼을 누르면 그 파일을 쓰는 실습만 아래에 모입니다.</p>
+    <div class="fgrid"><article class="fcard"><div class="fkick">고객사 제공 자료 (가상)</div><h3>02_발주처_공사시방서_소화조교반기(가상).pdf</h3>
+<p class="fsmall">원본: 260921 실습자료_① 발주처 공사시방서_소화조 교반기(가상)_V2.pdf</p><p class="fsmall">소화조 교반기 교체 사업의 발주처 공사시방서(고객사가 실제 문서 구조로 만든 가상 자료).</p>
+<blockquote>“발주처 요구사항을 빠짐없이 정리하고, 저희가 작성한 문서에 제대로 반영됐는지 확인해 보고 싶습니다.”<cite>고객사가 적어 준 ‘AI로 해보고 싶은 업무’</cite></blockquote>
+<p class="fsmall"><b>쓰는 곳</b> 2교시 51·58쪽 · 3교시 75쪽 · 4교시 107·111쪽</p>
+<button type="button" class="fbtn" data-file="spec">이 파일로 하는 실습 11개 보기</button></article><article class="fcard"><div class="fkick">고객사 제공 자료 (가상)</div><h3>02_당사_기술제안서_소화조교반설비(가상).docx</h3>
+<p class="fsmall">원본: 260921 실습자료_② 당사 기술제안서_소화조 교반설비(가상)_V2.docx</p><p class="fsmall">같은 사업에 대한 당사 기술제안서(가상). 시방서와 맞지 않는 부분이 일부 들어 있습니다.</p>
+<blockquote>“발주처 요구사항을 빠짐없이 정리하고, 저희가 작성한 문서에 제대로 반영됐는지 확인해 보고 싶습니다.”<cite>고객사가 적어 준 ‘AI로 해보고 싶은 업무’</cite></blockquote>
+<p class="fsmall"><b>쓰는 곳</b> 2교시 60·62쪽 · 4교시 111쪽</p>
+<button type="button" class="fbtn" data-file="prop">이 파일로 하는 실습 4개 보기</button></article><article class="fcard"><div class="fkick">고객사 제공 자료 (가상)</div><h3>03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</h3>
+<p class="fsmall">원본: 260921 실습자료_③~⑤ 업체 견적서_A사·B사·C사(가상)_V2</p><p class="fsmall">가상 업체 견적서 3건(엑셀 1, PDF 2). 사양·납기·상업 조건이 시방서와 다른 곳이 섞여 있습니다.</p>
+<blockquote>“받은 견적서가 요구사항과 사업 목적에 맞는지 검토하고, 부족한 부분은 업체에 확인할 내용으로 정리해 보고 싶습니다.”<cite>고객사가 적어 준 ‘AI로 해보고 싶은 업무’</cite></blockquote>
+<p class="fsmall"><b>쓰는 곳</b> 3교시 75·77쪽 · 4교시 107·111쪽</p>
+<button type="button" class="fbtn" data-file="quote">이 파일로 하는 실습 8개 보기</button></article></div>
+    <ul class="vlist"><li><b>강사가 만든 실습 파일</b><span>검토 기준·양식을 담은 지침과 스킬입니다. 고객사 자료를 그대로 두고 판정 기준만 넣기 위해 만들었습니다.</span></li><li><b>02_검토프로젝트_지침.txt</b><span>검토 프로젝트의 판정 기준·결과 양식을 적은 지침. · 2교시 51~52쪽</span><button type="button" class="fbtn sm" data-file="guide">1개 보기</button></li><li><b>04_quote-review.zip · SKILL.md</b><span>견적 검토 기준과 다섯 부분 양식을 담은 스킬. · 4교시 107·109쪽</span><button type="button" class="fbtn sm" data-file="skill">3개 보기</button></li></ul>
+  </section>
+  <div class="layout">
+    <aside class="rail" aria-label="찾기와 거르기">
+      <div><h4><label for="q">검색</label></h4><input id="q" class="search" type="search" placeholder="예: 시방서, 견적, 스킬, 지침, 코워크" autocomplete="off"></div>
+      <div><h4>도구</h4><div class="chips"><button type="button" class="chip tool-f" data-tool="대화" aria-pressed="false">대화</button><button type="button" class="chip tool-f" data-tool="웹 검색" aria-pressed="false">웹 검색</button><button type="button" class="chip tool-f" data-tool="프로젝트" aria-pressed="false">프로젝트</button><button type="button" class="chip tool-f" data-tool="아티팩트" aria-pressed="false">아티팩트</button><button type="button" class="chip tool-f" data-tool="파일 생성" aria-pressed="false">파일 생성</button><button type="button" class="chip tool-f" data-tool="스킬" aria-pressed="false">스킬</button><button type="button" class="chip tool-f" data-tool="코워크" aria-pressed="false">코워크</button><button type="button" class="chip tool-f" data-tool="클로드 코드" aria-pressed="false">클로드 코드</button></div></div>
+      <div class="fg-edu"><h4><i class="edu">교안</i>교시</h4><div class="chips"><button type="button" class="chip unit" data-unit="1" aria-pressed="false">1교시 <span class="n">3</span></button><button type="button" class="chip unit" data-unit="2" aria-pressed="false">2교시 <span class="n">13</span></button><button type="button" class="chip unit" data-unit="3" aria-pressed="false">3교시 <span class="n">4</span></button><button type="button" class="chip unit" data-unit="4" aria-pressed="false">4교시 <span class="n">9</span></button><button type="button" class="chip unit" data-unit="5" aria-pressed="false">5교시 <span class="n">1</span></button></div></div>
+      <div class="fg-edu"><h4><i class="edu">교안</i>사용 파일</h4><div class="chips"><button type="button" class="chip ft" data-ft="cust" aria-pressed="false">고객사 제공</button><button type="button" class="chip ft" data-ft="virt" aria-pressed="false">강사 제작</button><button type="button" class="chip ft" data-ft="none" aria-pressed="false">파일 없음</button></div><div class="chips" style="margin-top:6px"><button type="button" class="chip fk" data-file="spec" aria-pressed="false">02_발주처_공사시방서_소화조교반기(가상).pdf <span class="n">11</span></button><button type="button" class="chip fk" data-file="prop" aria-pressed="false">02_당사_기술제안서_소화조교반설비(가상).docx <span class="n">4</span></button><button type="button" class="chip fk" data-file="quote" aria-pressed="false">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf) <span class="n">8</span></button><button type="button" class="chip fk" data-file="guide" aria-pressed="false">02_검토프로젝트_지침.txt <span class="n">1</span></button><button type="button" class="chip fk" data-file="skill" aria-pressed="false">04_quote-review.zip · SKILL.md <span class="n">3</span></button></div></div>
+      <div class="fg-work"><h4><i class="work">업무</i>프로젝트 단계</h4><div class="stage"><button type="button" class="chip cat" data-cat="spec" aria-pressed="false">시방·제안 검토 <span class="n">8</span></button><span class="arrow" aria-hidden="true">→</span><button type="button" class="chip cat" data-cat="quote" aria-pressed="false">견적·구매 검토 <span class="n">7</span></button></div></div>
+      <div class="fg-work"><h4><i class="work">업무</i>공통 업무</h4><div class="chips"><button type="button" class="chip cat" data-cat="report" aria-pressed="false">보고·소통 <span class="n">6</span></button><button type="button" class="chip cat" data-cat="std" aria-pressed="false">기준·양식 관리 <span class="n">7</span></button><button type="button" class="chip cat" data-cat="agent" aria-pressed="false">코워크·클로드 코드 <span class="n">5</span></button><button type="button" class="chip cat" data-cat="ax" aria-pressed="false">AX 전파 <span class="n">5</span></button></div></div>
+      <div class="fg-work toggles"><label class="toggle"><input id="okonly" type="checkbox"> 공개·실습 자료로 가능한 것만</label><label class="toggle"><input id="newonly" type="checkbox"> 추가 제안만 (25개)</label><label class="toggle"><input id="custonly" type="checkbox"> 고객사 파일로 연습 가능 (10개)</label></div>
+      <div class="bulk"><button type="button" id="openall">모두 펼치기</button><button type="button" id="closeall">모두 접기</button></div>
+      <div class="count" id="count" aria-live="polite">68개 표시</div>
+      <button type="button" class="reset" id="reset">조건 모두 지우기</button>
+    </aside>
+    <main class="list" id="list">
+      <div class="divider edu" data-track="edu">교육 중 · 교안 실습</div>
+<section class="group" data-track="edu" data-group="u1" aria-labelledby="h-u1">
+  <div class="ghead"><h2 id="h-u1"><span class="gk edu">1교시</span>클로드 시작하기 <span class="n">3개 · 60분 · 교안 4~34쪽</span></h2>
+  <p class="bridges"><span class="bl">교육 후 이어 쓰기</span><a class="bridge" href="#보고-06" data-go="보고-06"><b>보고-06</b> 공정 현황 한눈 보기 만들기</a><a class="bridge" href="#보고-02" data-go="보고-02"><b>보고-02</b> 주간 공정 보고를 프로젝트 양식으로</a><a class="bridge" href="#기준-02" data-go="기준-02"><b>기준-02</b> 프로젝트 지침 보강하기 (메타 프롬프트)</a></p></div>
+  <div class="grid"><article class="card edu" id="C-S1-P01" data-track="edu" data-unit="1" data-ft="none" data-fk="" data-tools="웹 검색" data-q="c-s1-p01 16쪽 1교시 클로드 시작하기 검색하고 출처 확인하기 최근 바뀐 내용을 검색해 3줄로 정리하고, 줄마다 출처를 붙입니다. [주제]에 대해 최근 바뀐 내용을 찾아
+3줄로 정리해줘.
+각 줄마다 어느 자료에서 나온 내용인지
+출처를 함께 표시해줘.
+검색으로 확인되지 않은 내용은 넣지 말고,
+확실하지 않으면 &quot;확인 필요&quot;라고 써줘. 출처 링크를 하나 열어 그 내용이 원문에 실제로 있는지 확인합니다. 회사 내부 정보는 넣지 않습니다. 웹 검색 결과를 씁니다(파일 없음). [주제]만 바꿉니다 sonnet 5 · 노력 중간 웹 검색">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 16쪽</span><span class="tagid">1교시</span></div>
+    <h3>검색하고 출처 확인하기</h3>
+    <p class="when">최근 바뀐 내용을 검색해 3줄로 정리하고, 줄마다 출처를 붙입니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">웹 검색</span></div>
+    <p class="where"><b>어디서</b>Sonnet 5 · 노력 중간</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">웹 검색 결과를 씁니다(파일 없음). [주제]만 바꿉니다</span></div></div>
+    <div class="prompt" id="pw-0" data-open="false"><pre id="pr-0"><mark class="ph">[주제]</mark>에 대해 최근 바뀐 내용을 찾아
+3줄로 정리해줘.
+각 줄마다 어느 자료에서 나온 내용인지
+출처를 함께 표시해줘.
+검색으로 확인되지 않은 내용은 넣지 말고,
+확실하지 않으면 &quot;확인 필요&quot;라고 써줘.</pre></div>
+    <p class="check" id="ck-0" hidden><span class="k">검수</span>출처 링크를 하나 열어 그 내용이 원문에 실제로 있는지 확인합니다. 회사 내부 정보는 넣지 않습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="0" aria-expanded="false" aria-controls="pw-0 ck-0">펼치기 <span class="lines">108자</span></button>
+      <button type="button" class="copy" data-i="0" aria-label="검색하고 출처 확인하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S1-P02" data-track="edu" data-unit="1" data-ft="none" data-fk="" data-tools="아티팩트" data-q="c-s1-p02 22쪽 1교시 클로드 시작하기 표와 차트를 아티팩트로 만들기 메모를 4열 표로 만들고 막대 차트까지 별도 창(아티팩트)에 그립니다. 이번 주 영업팀 실적 보고서를 문서로 만들어줘.
+[거래처 / 영업 활동 / 계약 금액(만원) / 진행 상태] 4열 표로 정리해 줘
+표 아래에 거래처별 계약 금액을 막대차트로 시각화해줘.
+- 내가 적지 않은 값은 임의로 채우지 말고 &quot;확인 필요&quot;로 표시해줘.
+- 계약 금액이 &quot;확인 필요&quot;인 거래처는 차트에서 제외하고, 표에만 표시해줘.
+- 금액은 만원 단위 숫자로 통일해서 넣어줘.
+[내용]
+- a사, 신규 제안, 5000, 회신 대기
+- b사, 계약 갱신, 12000, 완료
+- c사, 견적 문의
+- d사, 클레임 대응, 처리중 표가 대화 안이 아니라 별도 창에 열렸는지, c사·d사 금액이 “확인 필요”로 남았는지 확인합니다. 교안의 가상 예시 데이터입니다. 교안의 가상 메모 데이터로 표·차트를 만듭니다 sonnet 5 · 노력 중간 아티팩트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 22쪽</span><span class="tagid">1교시</span></div>
+    <h3>표와 차트를 아티팩트로 만들기</h3>
+    <p class="when">메모를 4열 표로 만들고 막대 차트까지 별도 창(아티팩트)에 그립니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">아티팩트</span></div>
+    <p class="where"><b>어디서</b>Sonnet 5 · 노력 중간</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">교안의 가상 메모 데이터로 표·차트를 만듭니다</span></div></div>
+    <div class="prompt" id="pw-1" data-open="false"><pre id="pr-1">이번 주 영업팀 실적 보고서를 문서로 만들어줘.
+<mark class="ph">[거래처 / 영업 활동 / 계약 금액(만원) / 진행 상태]</mark> 4열 표로 정리해 줘
+표 아래에 거래처별 계약 금액을 막대차트로 시각화해줘.
+- 내가 적지 않은 값은 임의로 채우지 말고 &quot;확인 필요&quot;로 표시해줘.
+- 계약 금액이 &quot;확인 필요&quot;인 거래처는 차트에서 제외하고, 표에만 표시해줘.
+- 금액은 만원 단위 숫자로 통일해서 넣어줘.
+<mark class="ph">[내용]</mark>
+- A사, 신규 제안, 5000, 회신 대기
+- B사, 계약 갱신, 12000, 완료
+- C사, 견적 문의
+- D사, 클레임 대응, 처리중</pre></div>
+    <p class="check" id="ck-1" hidden><span class="k">검수</span>표가 대화 안이 아니라 별도 창에 열렸는지, C사·D사 금액이 “확인 필요”로 남았는지 확인합니다. 교안의 가상 예시 데이터입니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="1" aria-expanded="false" aria-controls="pw-1 ck-1">펼치기 <span class="lines">286자</span></button>
+      <button type="button" class="copy" data-i="1" aria-label="표와 차트를 아티팩트로 만들기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-1-3" data-track="edu" data-unit="1" data-ft="none" data-fk="" data-tools="프로젝트" data-q="c-1-3 28쪽 1교시 클로드 시작하기 범용 프로젝트 지침 1교시에 만드는 범용 프로젝트의 지침입니다. 2-1 · 2-5 · 4-3에서 다시 씁니다. [역할] 사무 업무를 돕는 도우미.
+[말투] 한국어 존댓말. 쉬운 표현.
+[형식] 표를 만들 때는 근거 열을 포함한다.
+
+[금지]
+- 내가 주지 않은 값을 지어내지 않는다
+- 확실하지 않으면 &quot;확인 필요&quot;로 표시한다
+- 실제 회사명·고객명·금액은 다루지 않는다
+
+[수치] 숫자와 날짜는 원문 그대로 옮기고,
+계산했으면 계산식을 함께 보여준다. 지침을 넣은 뒤 표를 요청했을 때 근거 열이 자동으로 생기는지 확인합니다. 프로젝트 이름에 회사명은 넣지 않습니다. 1교시 범용 프로젝트의 지침 칸에 붙여 넣습니다 프로젝트 › 지침 칸 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 28쪽</span><span class="tagid">1교시</span></div>
+    <h3>범용 프로젝트 지침</h3>
+    <p class="when">1교시에 만드는 범용 프로젝트의 지침입니다. 2-1 · 2-5 · 4-3에서 다시 씁니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>프로젝트 › 지침 칸</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">1교시 범용 프로젝트의 지침 칸에 붙여 넣습니다</span></div></div>
+    <div class="prompt" id="pw-2" data-open="false"><pre id="pr-2">[역할] 사무 업무를 돕는 도우미.
+[말투] 한국어 존댓말. 쉬운 표현.
+[형식] 표를 만들 때는 근거 열을 포함한다.
+
+[금지]
+- 내가 주지 않은 값을 지어내지 않는다
+- 확실하지 않으면 &quot;확인 필요&quot;로 표시한다
+- 실제 회사명·고객명·금액은 다루지 않는다
+
+[수치] 숫자와 날짜는 원문 그대로 옮기고,
+계산했으면 계산식을 함께 보여준다.</pre></div>
+    <p class="check" id="ck-2" hidden><span class="k">검수</span>지침을 넣은 뒤 표를 요청했을 때 근거 열이 자동으로 생기는지 확인합니다. 프로젝트 이름에 회사명은 넣지 않습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="2" aria-expanded="false" aria-controls="pw-2 ck-2">펼치기 <span class="lines">181자</span></button>
+      <button type="button" class="copy" data-i="2" aria-label="범용 프로젝트 지침 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="edu" data-group="u2" aria-labelledby="h-u2">
+  <div class="ghead"><h2 id="h-u2"><span class="gk edu">2교시</span>클로드 에이전트 기능 이해 <span class="n">13개 · 90분 · 교안 35~69쪽</span></h2>
+  <p class="bridges"><span class="bl">교육 후 이어 쓰기</span><a class="bridge" href="#시방-01" data-go="시방-01"><b>시방-01</b> 변경된 시방서와 이전 시방서 대조</a><a class="bridge" href="#시방-03" data-go="시방-03"><b>시방-03</b> Deviation Sheet 초안 만들기</a><a class="bridge" href="#시방-05" data-go="시방-05"><b>시방-05</b> 시방서로 발주처 질의서(RFI) 초안 만들기</a><a class="bridge" href="#기준-01" data-go="기준-01"><b>기준-01</b> 새 반복 분석 업무용 지침 만들기</a></p></div>
+  <div class="grid"><article class="card edu" id="C-시연" data-track="edu" data-unit="2" data-ft="none" data-fk="" data-tools="대화" data-q="c-시연 42쪽 2교시 클로드 에이전트 기능 이해 환각 직접 보기 (강사 시연) 존재하지 않는 법령을 물어 환각을 보여 주는 강사 시연용 문장입니다. 수강생은 입력하지 않습니다. 2026년에 개정된 &#x27;중소기업 사무자동화 지원법&#x27; 제12조의 ai 도입 지원금 신청 요건을 정리해줘. 이어서 “확실하지 않은 내용은 &quot;확인 필요&quot;라고 표시해줘.”를 보내 결과가 어떻게 달라지는지 보여 줍니다. 강사 화면에서만 보여 줍니다 강사 화면에서만 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 42쪽</span><span class="tagid">2교시</span></div>
+    <h3>환각 직접 보기 (강사 시연)</h3>
+    <p class="when">존재하지 않는 법령을 물어 환각을 보여 주는 강사 시연용 문장입니다. 수강생은 입력하지 않습니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <p class="where"><b>어디서</b>강사 화면에서만</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">강사 화면에서만 보여 줍니다</span></div></div>
+    <div class="prompt" id="pw-3" data-open="false"><pre id="pr-3">2026년에 개정된 &#x27;중소기업 사무자동화 지원법&#x27; 제12조의 AI 도입 지원금 신청 요건을 정리해줘.</pre></div>
+    <p class="check" id="ck-3" hidden><span class="k">검수</span>이어서 “확실하지 않은 내용은 &quot;확인 필요&quot;라고 표시해줘.”를 보내 결과가 어떻게 달라지는지 보여 줍니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="3" aria-expanded="false" aria-controls="pw-3 ck-3">펼치기 <span class="lines">56자</span></button>
+      <button type="button" class="copy" data-i="3" aria-label="환각 직접 보기 (강사 시연) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P01" data-track="edu" data-unit="2" data-ft="none" data-fk="" data-tools="프로젝트" data-q="c-s2-p01 48쪽 2교시 클로드 에이전트 기능 이해 ai가 무엇을 보고 있는지 확인하기 지금 대화에서 claude가 참고하는 정보를 네 층으로 나눠 보여 달라고 합니다. 지금 네가 참고할 수 있는 정보를
+아래 네 가지로 나눠서 알려줘.
+
+1) 프로젝트 지침에 적힌 규칙
+2) 프로젝트에 올라온 자료
+3) 이 대화에서 지금까지 나온 내용
+4) 방금 내가 보낸 메시지
+
+각 항목에 실제로 무엇이 들어 있는지 적고,
+비어 있으면 &quot;없음&quot;이라고 써줘.
+
+네가 볼 수 없는 것도 함께 알려줘. 1번에 1교시 지침이 나타나는지 확인합니다. 안 나오면 프로젝트 밖에서 연 대화입니다. 1교시 프로젝트에서 ai가 보는 범위를 확인합니다 1교시 프로젝트 · sonnet 5 · 중간 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 48쪽</span><span class="tagid">2교시</span></div>
+    <h3>AI가 무엇을 보고 있는지 확인하기</h3>
+    <p class="when">지금 대화에서 Claude가 참고하는 정보를 네 층으로 나눠 보여 달라고 합니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>1교시 프로젝트 · Sonnet 5 · 중간</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">1교시 프로젝트에서 AI가 보는 범위를 확인합니다</span></div></div>
+    <div class="prompt" id="pw-4" data-open="false"><pre id="pr-4">지금 네가 참고할 수 있는 정보를
+아래 네 가지로 나눠서 알려줘.
+
+1) 프로젝트 지침에 적힌 규칙
+2) 프로젝트에 올라온 자료
+3) 이 대화에서 지금까지 나온 내용
+4) 방금 내가 보낸 메시지
+
+각 항목에 실제로 무엇이 들어 있는지 적고,
+비어 있으면 &quot;없음&quot;이라고 써줘.
+
+네가 볼 수 없는 것도 함께 알려줘.</pre></div>
+    <p class="check" id="ck-4" hidden><span class="k">검수</span>1번에 1교시 지침이 나타나는지 확인합니다. 안 나오면 프로젝트 밖에서 연 대화입니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="4" aria-expanded="false" aria-controls="pw-4 ck-4">펼치기 <span class="lines">164자</span></button>
+      <button type="button" class="copy" data-i="4" aria-label="AI가 무엇을 보고 있는지 확인하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P02-Q" data-track="edu" data-unit="2" data-ft="cust" data-fk="spec" data-tools="프로젝트" data-q="c-s2-p02-q 51쪽 2교시 클로드 에이전트 기능 이해 검토 프로젝트 지침 적용 확인 검토 프로젝트에서 새 대화를 열어 지침이 적용됐는지 확인하는 질문입니다. 판정은 몇 가지로 하지? 표는 어떤 열로 만들지? 판정 네 가지와 일곱 개 열 이름이 그대로 나오면 지침이 적용된 것입니다. 검토 프로젝트에서 지침이 적용되는지 확인합니다 검토 프로젝트 · haiku 4.5 · 낮음 02_발주처_공사시방서_소화조교반기(가상).pdf 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 51쪽</span><span class="tagid">2교시</span></div>
+    <h3>검토 프로젝트 지침 적용 확인</h3>
+    <p class="when">검토 프로젝트에서 새 대화를 열어 지침이 적용됐는지 확인하는 질문입니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>검토 프로젝트 · Haiku 4.5 · 낮음</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="fnote">검토 프로젝트에서 지침이 적용되는지 확인합니다</div></div>
+    <div class="prompt" id="pw-5" data-open="false"><pre id="pr-5">판정은 몇 가지로 하지? 표는 어떤 열로 만들지?</pre></div>
+    <p class="check" id="ck-5" hidden><span class="k">검수</span>판정 네 가지와 일곱 개 열 이름이 그대로 나오면 지침이 적용된 것입니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="5" aria-expanded="false" aria-controls="pw-5 ck-5">펼치기 <span class="lines">27자</span></button>
+      <button type="button" class="copy" data-i="5" aria-label="검토 프로젝트 지침 적용 확인 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P02" data-track="edu" data-unit="2" data-ft="cust" data-fk="guide,spec" data-tools="프로젝트" data-q="c-s2-p02 52쪽 2교시 클로드 에이전트 기능 이해 검토 프로젝트 지침 (판정 기준·양식) 검토 업무 전용 프로젝트의 지침입니다. 판정 네 가지와 일곱 개 열 양식을 한 번만 적어 둡니다. [역할] 입찰 기술검토를 돕는 보조자.
+[기준] 프로젝트 지식의 발주처 공사시방서.
+판단마다 시방서 조항 번호를 적는다.
+[판정] 충족 / 미흡 / 누락 / 확인 필요 네 가지만 쓴다.
+- 충족: 기준을 만족하는 내용이 있다
+- 미흡: 내용은 있으나 기준에 못 미친다
+- 누락: 기준 항목이 문서에 없다
+- 확인 필요: 문서만으로 판단할 수 없다
+[양식] 검토 결과는 아래 열의 표로 만든다.
+번호 | 검토 항목 | 시방서 기준 | 근거 조항 |
+검토 대상 내용 | 판정 | 조치 의견
+여러 문서를 비교할 때는 항목을 행, 문서를 열로 두고
+마지막 열에 시방서 기준과 근거 조항을 넣는다.
+[수치] 숫자·단위는 원문 그대로 옮기고,
+계산했으면 계산식을 함께 보여준다.
+[금지]
+- 문서에 없는 값을 지어내지 않는다
+- 애매하면 &#x27;충족&#x27;이 아니라 &#x27;확인 필요&#x27;로 둔다
+- 채택·탈락 같은 최종 결론은 내리지 않는다
+- 배포된 실습 자료 외의 사내 자료는 다루지 않는다 프로젝트 지식에 시방서를 먼저 올립니다. 새 대화에서 “판정은 몇 가지로 하지? 표는 어떤 열로 만들지?”로 적용 여부를 확인합니다. 지침 칸에 검토 지침, 프로젝트 지식(화면 이름: 컨텍스트)에 시방서를 넣습니다 검토 프로젝트 “교반설비 입찰 검토” › 지침 칸 · 프로젝트 지식(화면 이름: 컨텍스트)에 02_발주처_공사시방서_소화조교반기(가상).pdf 02_검토프로젝트_지침.txt 02_발주처_공사시방서_소화조교반기(가상).pdf 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 52쪽</span><span class="tagid">2교시</span></div>
+    <h3>검토 프로젝트 지침 (판정 기준·양식)</h3>
+    <p class="when">검토 업무 전용 프로젝트의 지침입니다. 판정 네 가지와 일곱 개 열 양식을 한 번만 적어 둡니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>검토 프로젝트 “교반설비 입찰 검토” › 지침 칸 · 프로젝트 지식(화면 이름: 컨텍스트)에 02_발주처_공사시방서_소화조교반기(가상).pdf</p><div class="fuse"><div class="frow"><span class="fb virt">강사 제작</span><span class="fname">02_검토프로젝트_지침.txt</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="fnote">지침 칸에 검토 지침, 프로젝트 지식(화면 이름: 컨텍스트)에 시방서를 넣습니다</div></div>
+    <div class="prompt" id="pw-6" data-open="false"><pre id="pr-6">[역할] 입찰 기술검토를 돕는 보조자.
+[기준] 프로젝트 지식의 발주처 공사시방서.
+판단마다 시방서 조항 번호를 적는다.
+[판정] 충족 / 미흡 / 누락 / 확인 필요 네 가지만 쓴다.
+- 충족: 기준을 만족하는 내용이 있다
+- 미흡: 내용은 있으나 기준에 못 미친다
+- 누락: 기준 항목이 문서에 없다
+- 확인 필요: 문서만으로 판단할 수 없다
+[양식] 검토 결과는 아래 열의 표로 만든다.
+번호 | 검토 항목 | 시방서 기준 | 근거 조항 |
+검토 대상 내용 | 판정 | 조치 의견
+여러 문서를 비교할 때는 항목을 행, 문서를 열로 두고
+마지막 열에 시방서 기준과 근거 조항을 넣는다.
+[수치] 숫자·단위는 원문 그대로 옮기고,
+계산했으면 계산식을 함께 보여준다.
+[금지]
+- 문서에 없는 값을 지어내지 않는다
+- 애매하면 &#x27;충족&#x27;이 아니라 &#x27;확인 필요&#x27;로 둔다
+- 채택·탈락 같은 최종 결론은 내리지 않는다
+- 배포된 실습 자료 외의 사내 자료는 다루지 않는다</pre></div>
+    <p class="check" id="ck-6" hidden><span class="k">검수</span>프로젝트 지식에 시방서를 먼저 올립니다. 새 대화에서 “판정은 몇 가지로 하지? 표는 어떤 열로 만들지?”로 적용 여부를 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="6" aria-expanded="false" aria-controls="pw-6 ck-6">펼치기 <span class="lines">465자</span></button>
+      <button type="button" class="copy" data-i="6" aria-label="검토 프로젝트 지침 (판정 기준·양식) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-2-예시①" data-track="edu" data-unit="2" data-ft="none" data-fk="" data-tools="프로젝트" data-q="c-2-예시① 57쪽 2교시 클로드 에이전트 기능 이해 회의록에서 결정·할 일 나누기 “회의록 정리해줘”를 위임형 지시로 바꾼 예입니다. (교안 문장 + 붙여넣을 자리) 아래 회의록에서 &#x27;결정된 것&#x27;과 &#x27;할 일&#x27;을 나눠서 정리해줘.
+할 일은 [내용 / 담당 / 기한] 3열 표로 만들고,
+담당이나 기한이 적혀 있지 않으면 &quot;확인 필요&quot;라고 써줘.
+
+[회의록 붙여넣기] 누가 읽는지 · 어떤 모양으로 · 하지 말 것, 세 가지가 들어갔는지 봅니다. 실제 거래처명·금액은 넣지 않습니다. 내 회의록을 붙여 넣어 쓰는 참고 예시입니다 1교시 프로젝트 · haiku 4.5 · 낮음 (참고 예시) 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 57쪽</span><span class="tagid">2교시</span></div>
+    <h3>회의록에서 결정·할 일 나누기</h3>
+    <p class="when">“회의록 정리해줘”를 위임형 지시로 바꾼 예입니다. (교안 문장 + 붙여넣을 자리)</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>1교시 프로젝트 · Haiku 4.5 · 낮음 (참고 예시)</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">내 회의록을 붙여 넣어 쓰는 참고 예시입니다</span></div></div>
+    <div class="prompt" id="pw-7" data-open="false"><pre id="pr-7">아래 회의록에서 &#x27;결정된 것&#x27;과 &#x27;할 일&#x27;을 나눠서 정리해줘.
+할 일은 <mark class="ph">[내용 / 담당 / 기한]</mark> 3열 표로 만들고,
+담당이나 기한이 적혀 있지 않으면 &quot;확인 필요&quot;라고 써줘.
+
+<mark class="ph">[회의록 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-7" hidden><span class="k">검수</span>누가 읽는지 · 어떤 모양으로 · 하지 말 것, 세 가지가 들어갔는지 봅니다. 실제 거래처명·금액은 넣지 않습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="7" aria-expanded="false" aria-controls="pw-7 ck-7">펼치기 <span class="lines">106자</span></button>
+      <button type="button" class="copy" data-i="7" aria-label="회의록에서 결정·할 일 나누기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-2-예시②" data-track="edu" data-unit="2" data-ft="none" data-fk="" data-tools="프로젝트" data-q="c-2-예시② 57쪽 2교시 클로드 에이전트 기능 이해 팀장 보고용 3줄 요약 “이 자료 요약해줘”를 위임형 지시로 바꾼 예입니다. (교안 문장 + 붙여넣을 자리) 아래 자료를 팀장 보고용으로 3줄로 요약해줘.
+숫자와 날짜는 원문 그대로 쓰고,
+자료에 없는 내용은 넣지 마.
+
+[자료 붙여넣기] 누가 읽는지 · 어떤 모양으로 · 하지 말 것, 세 가지가 들어갔는지 봅니다. 실제 거래처명·금액은 넣지 않습니다. 내 자료를 붙여 넣어 쓰는 참고 예시입니다 1교시 프로젝트 · haiku 4.5 · 낮음 (참고 예시) 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 57쪽</span><span class="tagid">2교시</span></div>
+    <h3>팀장 보고용 3줄 요약</h3>
+    <p class="when">“이 자료 요약해줘”를 위임형 지시로 바꾼 예입니다. (교안 문장 + 붙여넣을 자리)</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>1교시 프로젝트 · Haiku 4.5 · 낮음 (참고 예시)</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">내 자료를 붙여 넣어 쓰는 참고 예시입니다</span></div></div>
+    <div class="prompt" id="pw-8" data-open="false"><pre id="pr-8">아래 자료를 팀장 보고용으로 3줄로 요약해줘.
+숫자와 날짜는 원문 그대로 쓰고,
+자료에 없는 내용은 넣지 마.
+
+<mark class="ph">[자료 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-8" hidden><span class="k">검수</span>누가 읽는지 · 어떤 모양으로 · 하지 말 것, 세 가지가 들어갔는지 봅니다. 실제 거래처명·금액은 넣지 않습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="8" aria-expanded="false" aria-controls="pw-8 ck-8">펼치기 <span class="lines">68자</span></button>
+      <button type="button" class="copy" data-i="8" aria-label="팀장 보고용 3줄 요약 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-2-예시③" data-track="edu" data-unit="2" data-ft="none" data-fk="" data-tools="프로젝트" data-q="c-2-예시③ 57쪽 2교시 클로드 에이전트 기능 이해 납기 지연 안내 메일 “메일 써줘”를 위임형 지시로 바꾼 예입니다. (교안 문장 + 붙여넣을 자리) 거래처에 납기 지연을 알리는 메일을 써줘.
+사과 → 지연 사유 → 변경된 일정 → 요청사항 순서로,
+5문장 이내, 정중한 존댓말로 써줘.
+
+[지연 사유와 변경 일정] 누가 읽는지 · 어떤 모양으로 · 하지 말 것, 세 가지가 들어갔는지 봅니다. 실제 거래처명·금액은 넣지 않습니다. 지연 사유와 일정을 붙여 넣어 쓰는 참고 예시입니다 1교시 프로젝트 · haiku 4.5 · 낮음 (참고 예시) 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 57쪽</span><span class="tagid">2교시</span></div>
+    <h3>납기 지연 안내 메일</h3>
+    <p class="when">“메일 써줘”를 위임형 지시로 바꾼 예입니다. (교안 문장 + 붙여넣을 자리)</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>1교시 프로젝트 · Haiku 4.5 · 낮음 (참고 예시)</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">지연 사유와 일정을 붙여 넣어 쓰는 참고 예시입니다</span></div></div>
+    <div class="prompt" id="pw-9" data-open="false"><pre id="pr-9">거래처에 납기 지연을 알리는 메일을 써줘.
+사과 → 지연 사유 → 변경된 일정 → 요청사항 순서로,
+5문장 이내, 정중한 존댓말로 써줘.
+
+<mark class="ph">[지연 사유와 변경 일정]</mark></pre></div>
+    <p class="check" id="ck-9" hidden><span class="k">검수</span>누가 읽는지 · 어떤 모양으로 · 하지 말 것, 세 가지가 들어갔는지 봅니다. 실제 거래처명·금액은 넣지 않습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="9" aria-expanded="false" aria-controls="pw-9 ck-9">펼치기 <span class="lines">88자</span></button>
+      <button type="button" class="copy" data-i="9" aria-label="납기 지연 안내 메일 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P03" data-track="edu" data-unit="2" data-ft="cust" data-fk="spec" data-tools="프로젝트" data-q="c-s2-p03 58쪽 2교시 클로드 에이전트 기능 이해 시방서 요구사항 정리하기 프로젝트 지식의 시방서에서 교반기 요구사항을 표로 뽑습니다. 프로젝트 지식의 공사시방서에서
+소화조 교반기(3.16)에 적용되는 요구사항을 뽑아줘.
+제1장·제2장 중 교반기에 적용되는 조항도 포함해줘.
+
+[번호 | 구분 | 요구사항 | 기준값 | 근거 조항] 표로 정리하고,
+구분은 성능 / 사양 / 시험·검사 / 납품·공정 /
+서류·인증 / 보증 중에서 고른다.
+
+수치는 원문 단위 그대로 옮기고,
+해석이 필요한 조항은 &#x27;확인 필요&#x27;로 표시해줘.
+표는 별도 창으로 만들어줘. 교반동력 5 w/m³ 이하 · 공인기관 cfd · 방폭 ex d iib t3 이상(kcs) · 예비품 3년분 · 하자담보 3년이 표에 있는지 확인합니다. 시방서 요구사항을 판정 양식 표로 정리합니다 검토 프로젝트 · sonnet 5 · 중간 02_발주처_공사시방서_소화조교반기(가상).pdf 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 58쪽</span><span class="tagid">2교시</span></div>
+    <h3>시방서 요구사항 정리하기</h3>
+    <p class="when">프로젝트 지식의 시방서에서 교반기 요구사항을 표로 뽑습니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>검토 프로젝트 · Sonnet 5 · 중간</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="fnote">시방서 요구사항을 판정 양식 표로 정리합니다</div></div>
+    <div class="prompt" id="pw-10" data-open="false"><pre id="pr-10">프로젝트 지식의 공사시방서에서
+소화조 교반기(3.16)에 적용되는 요구사항을 뽑아줘.
+제1장·제2장 중 교반기에 적용되는 조항도 포함해줘.
+
+[번호 | 구분 | 요구사항 | 기준값 | 근거 조항] 표로 정리하고,
+구분은 성능 / 사양 / 시험·검사 / 납품·공정 /
+서류·인증 / 보증 중에서 고른다.
+
+수치는 원문 단위 그대로 옮기고,
+해석이 필요한 조항은 &#x27;확인 필요&#x27;로 표시해줘.
+표는 별도 창으로 만들어줘.</pre></div>
+    <p class="check" id="ck-10" hidden><span class="k">검수</span>교반동력 5 W/m³ 이하 · 공인기관 CFD · 방폭 Ex d IIB T3 이상(KCs) · 예비품 3년분 · 하자담보 3년이 표에 있는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="10" aria-expanded="false" aria-controls="pw-10 ck-10">펼치기 <span class="lines">221자</span></button>
+      <button type="button" class="copy" data-i="10" aria-label="시방서 요구사항 정리하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P04" data-track="edu" data-unit="2" data-ft="cust" data-fk="prop,spec" data-tools="대화" data-q="c-s2-p04 60쪽 2교시 클로드 에이전트 기능 이해 제안서 반영 여부 확인하기 (후속 요청) 같은 대화에서 기술제안서를 첨부해 지침의 양식대로 대조합니다. 첨부한 기술제안서(4.3 소화조 교반설비)가
+방금 정리한 시방서 요구사항을 반영했는지 검토해줘.
+
+프로젝트 지침의 양식과 판정 기준을 그대로 쓰고,
+&#x27;미흡&#x27;과 &#x27;누락&#x27; 항목을 표 위쪽에 먼저 모아줘.
+
+제안서 안에서 서로 맞지 않는 내용이 있으면
+표 아래에 따로 적어줘. 6.9 w/m³(20.9 kw ÷ 3,050 m³)가 5 w/m³ 기준 대비 “미흡”으로 나왔는지, 계산식이 붙었는지 확인합니다. 기술제안서를 첨부해 시방서 요구사항 반영 여부를 대조합니다 s2-p03과 같은 대화 02_당사_기술제안서_소화조교반설비(가상).docx 02_발주처_공사시방서_소화조교반기(가상).pdf 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 60쪽</span><span class="tagid">2교시</span></div>
+    <h3>제안서 반영 여부 확인하기</h3>
+    <p class="when">(후속 요청) 같은 대화에서 기술제안서를 첨부해 지침의 양식대로 대조합니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <p class="where"><b>어디서</b>S2-P03과 같은 대화</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_당사_기술제안서_소화조교반설비(가상).docx</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="fnote">기술제안서를 첨부해 시방서 요구사항 반영 여부를 대조합니다</div></div>
+    <div class="prompt" id="pw-11" data-open="false"><pre id="pr-11">첨부한 기술제안서(4.3 소화조 교반설비)가
+방금 정리한 시방서 요구사항을 반영했는지 검토해줘.
+
+프로젝트 지침의 양식과 판정 기준을 그대로 쓰고,
+&#x27;미흡&#x27;과 &#x27;누락&#x27; 항목을 표 위쪽에 먼저 모아줘.
+
+제안서 안에서 서로 맞지 않는 내용이 있으면
+표 아래에 따로 적어줘.</pre></div>
+    <p class="check" id="ck-11" hidden><span class="k">검수</span>6.9 W/m³(20.9 kW ÷ 3,050 m³)가 5 W/m³ 기준 대비 “미흡”으로 나왔는지, 계산식이 붙었는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="11" aria-expanded="false" aria-controls="pw-11 ck-11">펼치기 <span class="lines">144자</span></button>
+      <button type="button" class="copy" data-i="11" aria-label="제안서 반영 여부 확인하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P04-R" data-track="edu" data-unit="2" data-ft="cust" data-fk="prop" data-tools="대화" data-q="c-s2-p04-r 60쪽 2교시 클로드 에이전트 기능 이해 미흡·누락 수정 방향 받기 (후속 요청) 대조표에서 미흡·누락만 골라 수정 방향과 확인 부서를 정리합니다. 미흡·누락 항목만 골라
+[항목 | 제안서 현재 내용 | 수정 방향 | 확인할 부서]
+표로 정리해줘. 새 수치를 만들지 말고,
+설계가 바뀌어야 하면 &#x27;설계 재검토 필요&#x27;로 적어줘. 새 수치를 ai가 만들지 않았는지 봅니다. 설계 변경 여부는 담당자가 정합니다. 같은 대화에서 미흡·누락 항목의 수정 방향을 받습니다 s2-p04와 같은 대화 02_당사_기술제안서_소화조교반설비(가상).docx 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 60쪽</span><span class="tagid">2교시</span></div>
+    <h3>미흡·누락 수정 방향 받기</h3>
+    <p class="when">(후속 요청) 대조표에서 미흡·누락만 골라 수정 방향과 확인 부서를 정리합니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <p class="where"><b>어디서</b>S2-P04와 같은 대화</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_당사_기술제안서_소화조교반설비(가상).docx</span></div><div class="fnote">같은 대화에서 미흡·누락 항목의 수정 방향을 받습니다</div></div>
+    <div class="prompt" id="pw-12" data-open="false"><pre id="pr-12">미흡·누락 항목만 골라
+[항목 | 제안서 현재 내용 | 수정 방향 | 확인할 부서]
+표로 정리해줘. 새 수치를 만들지 말고,
+설계가 바뀌어야 하면 &#x27;설계 재검토 필요&#x27;로 적어줘.</pre></div>
+    <p class="check" id="ck-12" hidden><span class="k">검수</span>새 수치를 AI가 만들지 않았는지 봅니다. 설계 변경 여부는 담당자가 정합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="12" aria-expanded="false" aria-controls="pw-12 ck-12">펼치기 <span class="lines">96자</span></button>
+      <button type="button" class="copy" data-i="12" aria-label="미흡·누락 수정 방향 받기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-2-재지시" data-track="edu" data-unit="2" data-ft="cust" data-fk="prop,spec" data-tools="대화" data-q="c-2-재지시 62쪽 2교시 클로드 에이전트 기능 이해 빠진 항목 다시 확인 (재지시) (후속 요청) 대조 결과에서 꼭 확인할 항목이 빠졌을 때 보냅니다. 3.16 전체를 다시 확인해줘. 교반동력·cfd·방폭·예비품·하자·공장검사 여섯 항목이 모두 표에 있는지 다시 봅니다. 빠진 항목을 다시 지시해 대조를 보완합니다 s2-p04와 같은 대화 02_당사_기술제안서_소화조교반설비(가상).docx 02_발주처_공사시방서_소화조교반기(가상).pdf 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 62쪽</span><span class="tagid">2교시</span></div>
+    <h3>빠진 항목 다시 확인 (재지시)</h3>
+    <p class="when">(후속 요청) 대조 결과에서 꼭 확인할 항목이 빠졌을 때 보냅니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <p class="where"><b>어디서</b>S2-P04와 같은 대화</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_당사_기술제안서_소화조교반설비(가상).docx</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="fnote">빠진 항목을 다시 지시해 대조를 보완합니다</div></div>
+    <div class="prompt" id="pw-13" data-open="false"><pre id="pr-13">3.16 전체를 다시 확인해줘.</pre></div>
+    <p class="check" id="ck-13" hidden><span class="k">검수</span>교반동력·CFD·방폭·예비품·하자·공장검사 여섯 항목이 모두 표에 있는지 다시 봅니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="13" aria-expanded="false" aria-controls="pw-13 ck-13">펼치기 <span class="lines">17자</span></button>
+      <button type="button" class="copy" data-i="13" aria-label="빠진 항목 다시 확인 (재지시) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P05" data-track="edu" data-unit="2" data-ft="none" data-fk="" data-tools="프로젝트" data-q="c-s2-p05 63쪽 2교시 클로드 에이전트 기능 이해 반복 분석 업무 후보 고르기 바로 답하지 말고 질문 5개부터 하게 해서, 기준·양식을 정하면 반복할 수 있는 업무를 고릅니다. 나는 [팀 이름]의 ax 담당자야.
+
+지금 바로 답을 만들지 말고,
+우리 팀이 반복하는 분석·검토 업무 중에서
+기준과 양식을 정해 두면 같은 형식으로
+반복할 수 있는 업무를 고를 수 있도록
+질문을 5개만 해줘.
+
+질문은 번호를 붙여 한 번에 보여주고,
+내가 답하기 전에는 다음 단계로 넘어가지 마. ai가 답을 만들지 않고 질문부터 했는지 확인합니다. 고른 후보는 4-3에서 스킬로 만듭니다. 우리 팀 반복 분석 업무 후보를 고릅니다 1교시 프로젝트 · haiku 4.5 · 낮음 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 63쪽</span><span class="tagid">2교시</span></div>
+    <h3>반복 분석 업무 후보 고르기</h3>
+    <p class="when">바로 답하지 말고 질문 5개부터 하게 해서, 기준·양식을 정하면 반복할 수 있는 업무를 고릅니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>1교시 프로젝트 · Haiku 4.5 · 낮음</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">우리 팀 반복 분석 업무 후보를 고릅니다</span></div></div>
+    <div class="prompt" id="pw-14" data-open="false"><pre id="pr-14">나는 <mark class="ph">[팀 이름]</mark>의 AX 담당자야.
+
+지금 바로 답을 만들지 말고,
+우리 팀이 반복하는 분석·검토 업무 중에서
+기준과 양식을 정해 두면 같은 형식으로
+반복할 수 있는 업무를 고를 수 있도록
+질문을 5개만 해줘.
+
+질문은 번호를 붙여 한 번에 보여주고,
+내가 답하기 전에는 다음 단계로 넘어가지 마.</pre></div>
+    <p class="check" id="ck-14" hidden><span class="k">검수</span>AI가 답을 만들지 않고 질문부터 했는지 확인합니다. 고른 후보는 4-3에서 스킬로 만듭니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="14" aria-expanded="false" aria-controls="pw-14 ck-14">펼치기 <span class="lines">157자</span></button>
+      <button type="button" class="copy" data-i="14" aria-label="반복 분석 업무 후보 고르기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S2-P05-R" data-track="edu" data-unit="2" data-ft="none" data-fk="" data-tools="대화" data-q="c-s2-p05-r 63쪽 2교시 클로드 에이전트 기능 이해 후보 3개를 표로 받기 (후속 요청) 질문에 답한 뒤 후보 3개를 기준 자료·결과 양식·위험·확인 지점과 함께 받습니다. 내 답변을 바탕으로 후보 3개만 골라줘.
+① 기준 자료 ② 결과 양식(열 이름) ③ 위험
+④ 사람 확인 지점을 표로 정리해줘. ④ 사람 확인 지점에 실제로 누가 확인할지 적을 수 있는지 봅니다. 같은 대화에서 후보 3개를 표로 받습니다 s2-p05와 같은 대화 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 63쪽</span><span class="tagid">2교시</span></div>
+    <h3>후보 3개를 표로 받기</h3>
+    <p class="when">(후속 요청) 질문에 답한 뒤 후보 3개를 기준 자료·결과 양식·위험·확인 지점과 함께 받습니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <p class="where"><b>어디서</b>S2-P05와 같은 대화</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">같은 대화에서 후보 3개를 표로 받습니다</span></div></div>
+    <div class="prompt" id="pw-15" data-open="false"><pre id="pr-15">내 답변을 바탕으로 후보 3개만 골라줘.
+① 기준 자료 ② 결과 양식(열 이름) ③ 위험
+④ 사람 확인 지점을 표로 정리해줘.</pre></div>
+    <p class="check" id="ck-15" hidden><span class="k">검수</span>④ 사람 확인 지점에 실제로 누가 확인할지 적을 수 있는지 봅니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="15" aria-expanded="false" aria-controls="pw-15 ck-15">펼치기 <span class="lines">68자</span></button>
+      <button type="button" class="copy" data-i="15" aria-label="후보 3개를 표로 받기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="edu" data-group="u3" aria-labelledby="h-u3">
+  <div class="ghead"><h2 id="h-u3"><span class="gk edu">3교시</span>클로드 코워크 시작하기 <span class="n">4개 · 30분 · 교안 70~93쪽</span></h2>
+  <p class="bridges"><span class="bl">교육 후 이어 쓰기</span><a class="bridge" href="#견적-01" data-go="견적-01"><b>견적-01</b> 견적 상업 조건만 따로 비교</a><a class="bridge" href="#견적-03" data-go="견적-03"><b>견적-03</b> 납기와 공정 영향 정리</a><a class="bridge" href="#견적-04" data-go="견적-04"><b>견적-04</b> 견적 금액·수량 검산</a><a class="bridge" href="#자동-02" data-go="자동-02"><b>자동-02</b> 코워크로 폴더 견적서 한 번에 검토하기</a></p></div>
+  <div class="grid"><article class="card edu" id="C-S3-P01" data-track="edu" data-unit="3" data-ft="cust" data-fk="quote,spec" data-tools="프로젝트" data-q="c-s3-p01 75쪽 3교시 클로드 코워크 시작하기 견적서 3건 한 번에 비교하기 견적서 3건을 한 번에 첨부해 항목 순서를 고정한 비교표를 만듭니다. 시방서 기준은 프로젝트가 기억합니다. 첨부한 업체 견적서 3건을 시방서 기준으로 비교해줘.
+
+비교 항목은 아래 순서로 고정해줘.
+견적금액(vat 별도) / 포함·제외 범위 / 교반동력(w/m³) /
+방폭 / 감속기 / 접액부 재질·축 밀봉 / cfd 해석 /
+공장검사(3차원 유속계) / 예비품 / 하자담보 /
+납기 / 국내 실적
+
+칸마다 견적 내용과 판정을 함께 적고,
+&#x27;별도 견적&#x27;과 &#x27;제외사항&#x27;까지 읽어줘.
+표는 별도 창으로 만들어줘. b사 “별도 견적”과 c사 deviation list까지 읽었는지, 칸마다 판정이 붙었는지 확인합니다. 견적서 3건을 첨부해 시방서 기준으로 한 번에 비교합니다 검토 프로젝트 새 대화 · sonnet 5 · 중간 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 02_발주처_공사시방서_소화조교반기(가상).pdf 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 75쪽</span><span class="tagid">3교시</span></div>
+    <h3>견적서 3건 한 번에 비교하기</h3>
+    <p class="when">견적서 3건을 한 번에 첨부해 항목 순서를 고정한 비교표를 만듭니다. 시방서 기준은 프로젝트가 기억합니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <p class="where"><b>어디서</b>검토 프로젝트 새 대화 · Sonnet 5 · 중간</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="fnote">견적서 3건을 첨부해 시방서 기준으로 한 번에 비교합니다</div></div>
+    <div class="prompt" id="pw-16" data-open="false"><pre id="pr-16">첨부한 업체 견적서 3건을 시방서 기준으로 비교해줘.
+
+비교 항목은 아래 순서로 고정해줘.
+견적금액(VAT 별도) / 포함·제외 범위 / 교반동력(W/m³) /
+방폭 / 감속기 / 접액부 재질·축 밀봉 / CFD 해석 /
+공장검사(3차원 유속계) / 예비품 / 하자담보 /
+납기 / 국내 실적
+
+칸마다 견적 내용과 판정을 함께 적고,
+&#x27;별도 견적&#x27;과 &#x27;제외사항&#x27;까지 읽어줘.
+표는 별도 창으로 만들어줘.</pre></div>
+    <p class="check" id="ck-16" hidden><span class="k">검수</span>B사 “별도 견적”과 C사 Deviation List까지 읽었는지, 칸마다 판정이 붙었는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="16" aria-expanded="false" aria-controls="pw-16 ck-16">펼치기 <span class="lines">215자</span></button>
+      <button type="button" class="copy" data-i="16" aria-label="견적서 3건 한 번에 비교하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S3-P01-R" data-track="edu" data-unit="3" data-ft="cust" data-fk="quote" data-tools="대화" data-q="c-s3-p01-r 75쪽 3교시 클로드 코워크 시작하기 제시 금액 반영 합계 계산하기 (후속 요청, 선택) 견적금액만으로 비교할 수 없는 이유와, 견적서에 적힌 추가 금액만 더한 합계를 받습니다. 견적금액만으로 세 업체를 비교할 수 없는 이유를
+3줄로 정리하고, 견적서에 적힌 별도 견적·추가 금액만 더해
+업체별 &#x27;제시 금액 반영 합계&#x27;를 계산식과 함께 보여줘.
+금액이 적혀 있지 않은 항목은 &#x27;금액 미제시&#x27;로,
+금액을 더해도 남는 미충족 항목은 따로 적어줘. b사 별도 견적 9,350만 원, c사 추가 850만 원이 들어갔는지, 더해도 남는 미충족 항목이 따로 나왔는지 확인합니다. 같은 대화에서 제시 금액 반영 합계를 계산합니다 s3-p01과 같은 대화 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 75쪽</span><span class="tagid">3교시</span></div>
+    <h3>제시 금액 반영 합계 계산하기</h3>
+    <p class="when">(후속 요청, 선택) 견적금액만으로 비교할 수 없는 이유와, 견적서에 적힌 추가 금액만 더한 합계를 받습니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <p class="where"><b>어디서</b>S3-P01과 같은 대화</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="fnote">같은 대화에서 제시 금액 반영 합계를 계산합니다</div></div>
+    <div class="prompt" id="pw-17" data-open="false"><pre id="pr-17">견적금액만으로 세 업체를 비교할 수 없는 이유를
+3줄로 정리하고, 견적서에 적힌 별도 견적·추가 금액만 더해
+업체별 &#x27;제시 금액 반영 합계&#x27;를 계산식과 함께 보여줘.
+금액이 적혀 있지 않은 항목은 &#x27;금액 미제시&#x27;로,
+금액을 더해도 남는 미충족 항목은 따로 적어줘.</pre></div>
+    <p class="check" id="ck-17" hidden><span class="k">검수</span>B사 별도 견적 9,350만 원, C사 추가 850만 원이 들어갔는지, 더해도 남는 미충족 항목이 따로 나왔는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="17" aria-expanded="false" aria-controls="pw-17 ck-17">펼치기 <span class="lines">143자</span></button>
+      <button type="button" class="copy" data-i="17" aria-label="제시 금액 반영 합계 계산하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S3-P02" data-track="edu" data-unit="3" data-ft="cust" data-fk="quote" data-tools="프로젝트|파일 생성" data-q="c-s3-p02 77쪽 3교시 클로드 코워크 시작하기 비교표를 엑셀 파일로 받기 (후속 요청) 비교표와 질의 목록을 시트 두 개짜리 엑셀로 받습니다. 오늘 1인 1회입니다. 위 비교표를 엑셀 파일로 만들어줘.
+첫 시트는 비교표,
+둘째 시트는 &#x27;확인 필요&#x27; 항목만 모은
+[업체 | 항목 | 업체에 물어볼 내용] 질의 목록으로 해줘. 파일을 열어 행 수(12)와 견적금액 3건(337,600,000 · 219,000,000 · 377,100,000원)을 원본과 대조합니다. 비교표를 엑셀 파일로 받습니다(파일 생성 1인 1회) s3-p01과 같은 대화 · 파일 생성 1인 1회 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 프로젝트 파일 생성">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 77쪽</span><span class="tagid">3교시</span></div>
+    <h3>비교표를 엑셀 파일로 받기</h3>
+    <p class="when">(후속 요청) 비교표와 질의 목록을 시트 두 개짜리 엑셀로 받습니다. 오늘 1인 1회입니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span><span class="tool">파일 생성</span></div>
+    <p class="where"><b>어디서</b>S3-P01과 같은 대화 · 파일 생성 1인 1회</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="fnote">비교표를 엑셀 파일로 받습니다(파일 생성 1인 1회)</div></div>
+    <div class="prompt" id="pw-18" data-open="false"><pre id="pr-18">위 비교표를 엑셀 파일로 만들어줘.
+첫 시트는 비교표,
+둘째 시트는 &#x27;확인 필요&#x27; 항목만 모은
+[업체 | 항목 | 업체에 물어볼 내용] 질의 목록으로 해줘.</pre></div>
+    <p class="check" id="ck-18" hidden><span class="k">검수</span>파일을 열어 행 수(12)와 견적금액 3건(337,600,000 · 219,000,000 · 377,100,000원)을 원본과 대조합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="18" aria-expanded="false" aria-controls="pw-18 ck-18">펼치기 <span class="lines">84자</span></button>
+      <button type="button" class="copy" data-i="18" aria-label="비교표를 엑셀 파일로 받기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S3-DEMO" data-track="edu" data-unit="3" data-ft="cust" data-fk="quote,spec" data-tools="코워크" data-q="c-s3-demo 84쪽 3교시 클로드 코워크 시작하기 코워크 시연 · 견적서 폴더 비교 (강사) 코워크에서 견적서 폴더를 연결하고 계획부터 받는 강사 시연 지시문입니다. 연결한 폴더의 견적서 3건을
+같은 폴더의 시방서 기준으로 비교해서
+비교표 엑셀 파일을 &#x27;결과&#x27; 폴더에 만들어줘.
+계획만 먼저 제시하고 승인을 기다려줘.
+원본 파일은 수정하지 마. 시연 폴더에는 시방서와 견적서 3건만 넣습니다. 계획을 읽고 승인한 뒤 결과 엑셀의 금액을 원본과 대조합니다. 코워크 시연 폴더에 시방서와 견적서 3건만 넣습니다(강사) cowork · 승인 모드 수동 · 강사 화면 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 02_발주처_공사시방서_소화조교반기(가상).pdf 코워크">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 84쪽</span><span class="tagid">3교시</span></div>
+    <h3>코워크 시연 · 견적서 폴더 비교 (강사)</h3>
+    <p class="when">코워크에서 견적서 폴더를 연결하고 계획부터 받는 강사 시연 지시문입니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">코워크</span></div>
+    <p class="where"><b>어디서</b>Cowork · 승인 모드 수동 · 강사 화면</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="fnote">코워크 시연 폴더에 시방서와 견적서 3건만 넣습니다(강사)</div></div>
+    <div class="prompt" id="pw-19" data-open="false"><pre id="pr-19">연결한 폴더의 견적서 3건을
+같은 폴더의 시방서 기준으로 비교해서
+비교표 엑셀 파일을 &#x27;결과&#x27; 폴더에 만들어줘.
+계획만 먼저 제시하고 승인을 기다려줘.
+원본 파일은 수정하지 마.</pre></div>
+    <p class="check" id="ck-19" hidden><span class="k">검수</span>시연 폴더에는 시방서와 견적서 3건만 넣습니다. 계획을 읽고 승인한 뒤 결과 엑셀의 금액을 원본과 대조합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="19" aria-expanded="false" aria-controls="pw-19 ck-19">펼치기 <span class="lines">95자</span></button>
+      <button type="button" class="copy" data-i="19" aria-label="코워크 시연 · 견적서 폴더 비교 (강사) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="edu" data-group="u4" aria-labelledby="h-u4">
+  <div class="ghead"><h2 id="h-u4"><span class="gk edu">4교시</span>클로드 스킬 이해 <span class="n">9개 · 60분 · 교안 94~125쪽</span></h2>
+  <p class="bridges"><span class="bl">교육 후 이어 쓰기</span><a class="bridge" href="#기준-03" data-go="기준-03"><b>기준-03</b> 스킬 설명(description) 다듬기</a><a class="bridge" href="#기준-04" data-go="기준-04"><b>기준-04</b> 결과 형식이 같은지 비교하기</a><a class="bridge" href="#기준-05" data-go="기준-05"><b>기준-05</b> 스킬 시험 문장 네 가지 만들기</a><a class="bridge" href="#견적-02" data-go="견적-02"><b>견적-02</b> 업체별 질의서 메일 초안</a></p></div>
+  <div class="grid"><article class="card edu" id="C-S4-P01" data-track="edu" data-unit="4" data-ft="cust" data-fk="skill,spec,quote" data-tools="스킬" data-q="c-s4-p01 107쪽 4교시 클로드 스킬 이해 배포된 견적 검토 스킬 써 보기 quote-review 스킬을 올린 뒤, 스킬 이름 없이 “검토해줘”만 보냅니다. a사 견적서 검토해줘. 결과가 견적 개요 · 시방 대비 검토표 · 금액 정리 · 업체 질의 · 요약 다섯 부분으로 나왔는지 확인합니다. quote-review 스킬을 올리고 시방서 + a사 견적서로 처음 써 봅니다 프로젝트 밖 새 대화 · sonnet 5 · 중간 · 설정 › 기능 「코드 실행 및 파일 생성」 on 04_quote-review.zip · skill.md 02_발주처_공사시방서_소화조교반기(가상).pdf 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 107쪽</span><span class="tagid">4교시</span></div>
+    <h3>배포된 견적 검토 스킬 써 보기</h3>
+    <p class="when">quote-review 스킬을 올린 뒤, 스킬 이름 없이 “검토해줘”만 보냅니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>프로젝트 밖 새 대화 · Sonnet 5 · 중간 · 설정 › 기능 「코드 실행 및 파일 생성」 ON</p><div class="fuse"><div class="frow"><span class="fb virt">강사 제작</span><span class="fname">04_quote-review.zip · SKILL.md</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="fnote">quote-review 스킬을 올리고 시방서 + A사 견적서로 처음 써 봅니다</div></div>
+    <div class="prompt" id="pw-20" data-open="false"><pre id="pr-20">A사 견적서 검토해줘.</pre></div>
+    <p class="check" id="ck-20" hidden><span class="k">검수</span>결과가 견적 개요 · 시방 대비 검토표 · 금액 정리 · 업체 질의 · 요약 다섯 부분으로 나왔는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="20" aria-expanded="false" aria-controls="pw-20 ck-20">펼치기 <span class="lines">12자</span></button>
+      <button type="button" class="copy" data-i="20" aria-label="배포된 견적 검토 스킬 써 보기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-SKILL" data-track="edu" data-unit="4" data-ft="virt" data-fk="skill" data-tools="스킬" data-q="c-skill 109쪽 4교시 클로드 스킬 이해 quote-review skill.md 전문 배포 스킬의 전체 내용입니다. 2교시 지침의 판정·양식에 금액 정리와 업체 질의를 더했습니다. ---
+name: quote-review
+description: 업체 견적서 1건을 발주처 시방서 기준으로 검토해 정해진 양식의 견적 검토서로 정리할 때 사용. 견적서, 견적 검토, 업체 견적, 시방 대비, 견적 조건, 별도 견적, 제외사항이 나오면 사용. 기술제안서·설계서의 시방 반영 검토나 여러 업체를 한 표로 비교할 때는 쓰지 않는다.
+---
+
+# 견적 검토서 작성
+
+## 입력
+- 업체 견적서 1건 (xlsx · pdf · docx 또는 붙여 넣은 글)
+- 기준: 발주처 공사시방서 (대화에 첨부되었거나 프로젝트 지식에 있는 것)
+- 시방서가 없으면 검토를 시작하지 말고 시방서를 요청한다.
+
+## 절차
+1. 견적서의 모든 시트·쪽을 읽는다. 내역, data sheet, deviation, 제외사항, 별도 견적까지 포함한다.
+2. 시방서에서 아래 검토 항목의 기준값과 조항 번호를 찾는다.
+3. 항목마다 견적 내용을 원문 그대로 옮기고 판정을 붙인다. 판정은 충족 / 미흡 / 누락 / 확인 필요 중 하나다.
+4. 견적서에 적힌 별도 견적·추가 금액만 더해 &#x27;제시 금액 반영 합계&#x27;를 계산한다. 계산식을 붙인다.
+5. 업체에 물어볼 질의를 정리한다.
+
+## 검토 항목 (순서 고정)
+1. 견적금액·vat
+2. 포함·제외 범위
+3. 교반동력 (w/m³, 축동력 기준)
+4. 임펠러 형식·동력계수
+5. 방폭 (전동기·현장조작반, 인증)
+6. 감속기 (원산지·인증·s.f)
+7. 접액부 재질·축 밀봉
+8. 계장·통신 (진동센서·modbus tcp)
+9. 성능 입증 (cfd)
+10. 공장검사 (감독관 입회 · 3차원 유속계 시험)
+11. 예비품
+12. 하자담보
+13. 납기
+14. 납품 실적
+15. 지침서 언어
+
+## 출력 (아래 순서와 열 이름 그대로)
+### 1. 견적 개요
+| 항목 | 내용 | 근거 위치 |
+
+### 2. 시방 대비 검토표
+| 번호 | 검토 항목 | 시방서 기준 | 근거 조항 | 검토 대상 내용 | 판정 | 조치 의견 |
+- 행 순서는 검토 항목 순서 그대로 둔다. 업체가 바뀌어도 같은 순서다.
+- &#x27;검토 대상 내용&#x27;에는 견적서 위치(시트·쪽)를 괄호로 붙인다.
+- 표 아래에 &#x27;미흡·누락 요약&#x27;을 따로 모은다.
+
+### 3. 금액 정리
+| 구분 | 금액(원) | 계산식·근거 |
+- 견적금액 / 별도 견적·추가 금액 / 제시 금액 반영 합계 / 금액 미제시 항목
+
+### 4. 업체 질의 목록
+| 번호 | 항목 | 질의 내용 |
+
+### 5. 요약
+3줄 이내. 미흡·누락 건수, 금액만으로 비교할 때 주의점.
+
+## 금지
+- 견적서에 없는 금액·사양을 추정해 채우지 않는다. 비어 있으면 &#x27;확인 필요&#x27;.
+- 애매하면 &#x27;충족&#x27;으로 처리하지 않는다.
+- 업체 채택·탈락·순위 결론을 내리지 않는다. 결정은 담당자가 한다.
+- 원본 파일을 수정하지 않는다. 설명(description)의 “쓰지 않는 경우” 문장이 인접 요청 오호출을 막습니다. 실제 고객명·금액은 넣지 않습니다. zip 안 skill.md 전문을 열어 봅니다 04_quote-review.zip을 설정 › 사용자 지정 › 스킬에서 업로드 · 이 칸은 zip 안 skill.md 열어 보기용 전문 (교안 109쪽은 요약) 04_quote-review.zip · skill.md 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 109쪽</span><span class="tagid">4교시</span></div>
+    <h3>quote-review SKILL.md 전문</h3>
+    <p class="when">배포 스킬의 전체 내용입니다. 2교시 지침의 판정·양식에 금액 정리와 업체 질의를 더했습니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>04_quote-review.zip을 설정 › 사용자 지정 › 스킬에서 업로드 · 이 칸은 ZIP 안 SKILL.md 열어 보기용 전문 (교안 109쪽은 요약)</p><div class="fuse"><div class="frow"><span class="fb virt">강사 제작</span><span class="fname">04_quote-review.zip · SKILL.md</span></div><div class="fnote">ZIP 안 SKILL.md 전문을 열어 봅니다</div></div>
+    <div class="prompt" id="pw-21" data-open="false"><pre id="pr-21">---
+name: quote-review
+description: 업체 견적서 1건을 발주처 시방서 기준으로 검토해 정해진 양식의 견적 검토서로 정리할 때 사용. 견적서, 견적 검토, 업체 견적, 시방 대비, 견적 조건, 별도 견적, 제외사항이 나오면 사용. 기술제안서·설계서의 시방 반영 검토나 여러 업체를 한 표로 비교할 때는 쓰지 않는다.
+---
+
+# 견적 검토서 작성
+
+## 입력
+- 업체 견적서 1건 (xlsx · pdf · docx 또는 붙여 넣은 글)
+- 기준: 발주처 공사시방서 (대화에 첨부되었거나 프로젝트 지식에 있는 것)
+- 시방서가 없으면 검토를 시작하지 말고 시방서를 요청한다.
+
+## 절차
+1. 견적서의 모든 시트·쪽을 읽는다. 내역, Data Sheet, Deviation, 제외사항, 별도 견적까지 포함한다.
+2. 시방서에서 아래 검토 항목의 기준값과 조항 번호를 찾는다.
+3. 항목마다 견적 내용을 원문 그대로 옮기고 판정을 붙인다. 판정은 충족 / 미흡 / 누락 / 확인 필요 중 하나다.
+4. 견적서에 적힌 별도 견적·추가 금액만 더해 &#x27;제시 금액 반영 합계&#x27;를 계산한다. 계산식을 붙인다.
+5. 업체에 물어볼 질의를 정리한다.
+
+## 검토 항목 (순서 고정)
+1. 견적금액·VAT
+2. 포함·제외 범위
+3. 교반동력 (W/m³, 축동력 기준)
+4. 임펠러 형식·동력계수
+5. 방폭 (전동기·현장조작반, 인증)
+6. 감속기 (원산지·인증·S.F)
+7. 접액부 재질·축 밀봉
+8. 계장·통신 (진동센서·Modbus TCP)
+9. 성능 입증 (CFD)
+10. 공장검사 (감독관 입회 · 3차원 유속계 시험)
+11. 예비품
+12. 하자담보
+13. 납기
+14. 납품 실적
+15. 지침서 언어
+
+## 출력 (아래 순서와 열 이름 그대로)
+### 1. 견적 개요
+| 항목 | 내용 | 근거 위치 |
+
+### 2. 시방 대비 검토표
+| 번호 | 검토 항목 | 시방서 기준 | 근거 조항 | 검토 대상 내용 | 판정 | 조치 의견 |
+- 행 순서는 검토 항목 순서 그대로 둔다. 업체가 바뀌어도 같은 순서다.
+- &#x27;검토 대상 내용&#x27;에는 견적서 위치(시트·쪽)를 괄호로 붙인다.
+- 표 아래에 &#x27;미흡·누락 요약&#x27;을 따로 모은다.
+
+### 3. 금액 정리
+| 구분 | 금액(원) | 계산식·근거 |
+- 견적금액 / 별도 견적·추가 금액 / 제시 금액 반영 합계 / 금액 미제시 항목
+
+### 4. 업체 질의 목록
+| 번호 | 항목 | 질의 내용 |
+
+### 5. 요약
+3줄 이내. 미흡·누락 건수, 금액만으로 비교할 때 주의점.
+
+## 금지
+- 견적서에 없는 금액·사양을 추정해 채우지 않는다. 비어 있으면 &#x27;확인 필요&#x27;.
+- 애매하면 &#x27;충족&#x27;으로 처리하지 않는다.
+- 업체 채택·탈락·순위 결론을 내리지 않는다. 결정은 담당자가 한다.
+- 원본 파일을 수정하지 않는다.</pre></div>
+    <p class="check" id="ck-21" hidden><span class="k">검수</span>설명(description)의 “쓰지 않는 경우” 문장이 인접 요청 오호출을 막습니다. 실제 고객명·금액은 넣지 않습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="21" aria-expanded="false" aria-controls="pw-21 ck-21">펼치기 <span class="lines">1331자</span></button>
+      <button type="button" class="copy" data-i="21" aria-label="quote-review SKILL.md 전문 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S4-P02-1" data-track="edu" data-unit="4" data-ft="cust" data-fk="spec,quote" data-tools="스킬" data-q="c-s4-p02-1 111쪽 4교시 클로드 스킬 이해 호출 시험 · 정상 1 (필수) 프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 호출 · a사와 같은 다섯 부분. b사 견적서 검토해줘. 정상은 호출되고 a사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다. 시방서 + b사 견적서로 스킬이 불리는지 시험합니다(필수) haiku 4.5 · 낮음 · 네 시험 모두 같은 모델 02_발주처_공사시방서_소화조교반기(가상).pdf 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 111쪽</span><span class="tagid">4교시</span></div>
+    <h3>호출 시험 · 정상 1 (필수)</h3>
+    <p class="when">프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 호출 · A사와 같은 다섯 부분.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>Haiku 4.5 · 낮음 · 네 시험 모두 같은 모델</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="fnote">시방서 + B사 견적서로 스킬이 불리는지 시험합니다(필수)</div></div>
+    <div class="prompt" id="pw-22" data-open="false"><pre id="pr-22">B사 견적서 검토해줘.</pre></div>
+    <p class="check" id="ck-22" hidden><span class="k">검수</span>정상은 호출되고 A사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="22" aria-expanded="false" aria-controls="pw-22 ck-22">펼치기 <span class="lines">12자</span></button>
+      <button type="button" class="copy" data-i="22" aria-label="호출 시험 · 정상 1 (필수) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S4-P02-2" data-track="edu" data-unit="4" data-ft="cust" data-fk="spec,quote" data-tools="스킬" data-q="c-s4-p02-2 111쪽 4교시 클로드 스킬 이해 호출 시험 · 정상 2 (선택) 프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 호출 · 같은 다섯 부분. c사 견적이 시방 기준에 맞는지 봐줘. 정상은 호출되고 a사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다. 시방서 + c사 견적서로 같은 형식이 나오는지 시험합니다(선택) haiku 4.5 · 낮음 · 네 시험 모두 같은 모델 02_발주처_공사시방서_소화조교반기(가상).pdf 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 111쪽</span><span class="tagid">4교시</span></div>
+    <h3>호출 시험 · 정상 2 (선택)</h3>
+    <p class="when">프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 호출 · 같은 다섯 부분.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>Haiku 4.5 · 낮음 · 네 시험 모두 같은 모델</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="fnote">시방서 + C사 견적서로 같은 형식이 나오는지 시험합니다(선택)</div></div>
+    <div class="prompt" id="pw-23" data-open="false"><pre id="pr-23">C사 견적이 시방 기준에 맞는지 봐줘.</pre></div>
+    <p class="check" id="ck-23" hidden><span class="k">검수</span>정상은 호출되고 A사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="23" aria-expanded="false" aria-controls="pw-23 ck-23">펼치기 <span class="lines">21자</span></button>
+      <button type="button" class="copy" data-i="23" aria-label="호출 시험 · 정상 2 (선택) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S4-P02-3" data-track="edu" data-unit="4" data-ft="cust" data-fk="spec,prop" data-tools="스킬" data-q="c-s4-p02-3 111쪽 4교시 클로드 스킬 이해 호출 시험 · 인접 (필수) 프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 미호출. 기술제안서가 시방서를 반영했는지 확인해줘. 정상은 호출되고 a사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다. 시방서 + 기술제안서: 비슷하지만 스킬이 불리면 안 되는 요청입니다(필수) haiku 4.5 · 낮음 · 네 시험 모두 같은 모델 02_발주처_공사시방서_소화조교반기(가상).pdf 02_당사_기술제안서_소화조교반설비(가상).docx 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 111쪽</span><span class="tagid">4교시</span></div>
+    <h3>호출 시험 · 인접 (필수)</h3>
+    <p class="when">프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 미호출.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>Haiku 4.5 · 낮음 · 네 시험 모두 같은 모델</p><div class="fuse"><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_발주처_공사시방서_소화조교반기(가상).pdf</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">02_당사_기술제안서_소화조교반설비(가상).docx</span></div><div class="fnote">시방서 + 기술제안서: 비슷하지만 스킬이 불리면 안 되는 요청입니다(필수)</div></div>
+    <div class="prompt" id="pw-24" data-open="false"><pre id="pr-24">기술제안서가 시방서를 반영했는지 확인해줘.</pre></div>
+    <p class="check" id="ck-24" hidden><span class="k">검수</span>정상은 호출되고 A사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="24" aria-expanded="false" aria-controls="pw-24 ck-24">펼치기 <span class="lines">23자</span></button>
+      <button type="button" class="copy" data-i="24" aria-label="호출 시험 · 인접 (필수) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S4-P02-4" data-track="edu" data-unit="4" data-ft="none" data-fk="" data-tools="스킬" data-q="c-s4-p02-4 111쪽 4교시 클로드 스킬 이해 호출 시험 · 무관 (선택) 프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 미호출. 다음 주 팀 회의 안내 메일 초안 써줘. 정상은 호출되고 a사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다. 파일 없이 무관한 요청으로 스킬이 불리지 않는지 봅니다(선택) haiku 4.5 · 낮음 · 네 시험 모두 같은 모델 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 111쪽</span><span class="tagid">4교시</span></div>
+    <h3>호출 시험 · 무관 (선택)</h3>
+    <p class="when">프로젝트 밖에서 새 대화를 열고 이 한 줄만 보냅니다. 기대 결과: 미호출.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>Haiku 4.5 · 낮음 · 네 시험 모두 같은 모델</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">파일 없이 무관한 요청으로 스킬이 불리지 않는지 봅니다(선택)</span></div></div>
+    <div class="prompt" id="pw-25" data-open="false"><pre id="pr-25">다음 주 팀 회의 안내 메일 초안 써줘.</pre></div>
+    <p class="check" id="ck-25" hidden><span class="k">검수</span>정상은 호출되고 A사와 같은 다섯 부분이 나와야 합니다. 인접·무관은 호출되지 않아야 합니다. 인접에서 호출되면 설명의 “쓰지 않는 경우”를 고칩니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="25" aria-expanded="false" aria-controls="pw-25 ck-25">펼치기 <span class="lines">22자</span></button>
+      <button type="button" class="copy" data-i="25" aria-label="호출 시험 · 무관 (선택) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S4-P03" data-track="edu" data-unit="4" data-ft="none" data-fk="" data-tools="스킬" data-q="c-s4-p03 115쪽 4교시 클로드 스킬 이해 내 업무 스킬 만들기 (다섯 칸 먼저) 2-5에서 고른 업무를 다섯 칸(언제·입력·절차·출력·금지) 표부터 채워 스킬로 만듭니다. 2교시에서 고른 반복 분석 업무 후보 중 하나를
+claude 스킬로 만들고 싶어.
+
+지금 바로 만들지 말고,
+다섯 칸을 내가 채울 수 있도록
+빈칸이 있는 표를 먼저 보여줘.
+언제 · 입력 · 절차 · 출력 · 금지
+
+내가 표를 채우기 전에는 초안을 쓰지 마. 표를 채우기 전에 초안을 쓰지 않았는지 확인합니다. 우리 팀 업무로 스킬 다섯 칸을 먼저 채웁니다 1교시 프로젝트 · haiku 4.5 · 낮음 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 115쪽</span><span class="tagid">4교시</span></div>
+    <h3>내 업무 스킬 만들기 (다섯 칸 먼저)</h3>
+    <p class="when">2-5에서 고른 업무를 다섯 칸(언제·입력·절차·출력·금지) 표부터 채워 스킬로 만듭니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>1교시 프로젝트 · Haiku 4.5 · 낮음</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">우리 팀 업무로 스킬 다섯 칸을 먼저 채웁니다</span></div></div>
+    <div class="prompt" id="pw-26" data-open="false"><pre id="pr-26">2교시에서 고른 반복 분석 업무 후보 중 하나를
+Claude 스킬로 만들고 싶어.
+
+지금 바로 만들지 말고,
+다섯 칸을 내가 채울 수 있도록
+빈칸이 있는 표를 먼저 보여줘.
+언제 · 입력 · 절차 · 출력 · 금지
+
+내가 표를 채우기 전에는 초안을 쓰지 마.</pre></div>
+    <p class="check" id="ck-26" hidden><span class="k">검수</span>표를 채우기 전에 초안을 쓰지 않았는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="26" aria-expanded="false" aria-controls="pw-26 ck-26">펼치기 <span class="lines">136자</span></button>
+      <button type="button" class="copy" data-i="26" aria-label="내 업무 스킬 만들기 (다섯 칸 먼저) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S4-P03-R" data-track="edu" data-unit="4" data-ft="none" data-fk="" data-tools="스킬" data-q="c-s4-p03-r 115쪽 4교시 클로드 스킬 이해 skill.md 초안 받기 (후속 요청) 채운 다섯 칸으로 skill.md 초안을 별도 창에 받습니다. 채운 내용으로 skill.md를 별도 창에 작성해줘.
+출력은 열 이름까지 정하고,
+실제 고객명·금액은 넣지 말고 자리 표시로 둬. 설명의 구체성 · 본문 길이 · 금지 칸 · 출력 열 이름 · 임의 규칙, 다섯 가지를 점검합니다. 등록과 시험은 수업 후 과제입니다. 같은 대화에서 skill.md 초안을 받습니다 s4-p03과 같은 대화 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 115쪽</span><span class="tagid">4교시</span></div>
+    <h3>SKILL.md 초안 받기</h3>
+    <p class="when">(후속 요청) 채운 다섯 칸으로 SKILL.md 초안을 별도 창에 받습니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>S4-P03과 같은 대화</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">같은 대화에서 SKILL.md 초안을 받습니다</span></div></div>
+    <div class="prompt" id="pw-27" data-open="false"><pre id="pr-27">채운 내용으로 SKILL.md를 별도 창에 작성해줘.
+출력은 열 이름까지 정하고,
+실제 고객명·금액은 넣지 말고 자리 표시로 둬.</pre></div>
+    <p class="check" id="ck-27" hidden><span class="k">검수</span>설명의 구체성 · 본문 길이 · 금지 칸 · 출력 열 이름 · 임의 규칙, 다섯 가지를 점검합니다. 등록과 시험은 수업 후 과제입니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="27" aria-expanded="false" aria-controls="pw-27 ck-27">펼치기 <span class="lines">70자</span></button>
+      <button type="button" class="copy" data-i="27" aria-label="SKILL.md 초안 받기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card edu" id="C-S4-DEMO" data-track="edu" data-unit="4" data-ft="cust" data-fk="skill,quote" data-tools="코워크|스킬" data-q="c-s4-demo 118쪽 4교시 클로드 스킬 이해 코워크 시연 · 폴더의 견적서마다 스킬 적용 (강사) 코워크에서 스킬 이름 없이 지시해, 견적서마다 같은 형식의 검토서가 나오는 모습을 보여 줍니다. 연결한 폴더의 견적서를 하나씩 검토해서
+업체별 검토서를 &#x27;결과&#x27; 폴더에 만들어줘.
+기준은 같은 폴더의 시방서야.
+원본 파일은 수정하지 마. 업체별 검토서가 같은 다섯 부분인지, 빈칸이 “확인 필요”로 남았는지 함께 봅니다. 코워크에서 폴더의 견적서마다 스킬을 적용합니다(강사) cowork · 강사 계정에 quote-review 등록 04_quote-review.zip · skill.md 03_업체견적서 a사(.xlsx)·b사(.pdf)·c사(.pdf) 코워크 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 118쪽</span><span class="tagid">4교시</span></div>
+    <h3>코워크 시연 · 폴더의 견적서마다 스킬 적용 (강사)</h3>
+    <p class="when">코워크에서 스킬 이름 없이 지시해, 견적서마다 같은 형식의 검토서가 나오는 모습을 보여 줍니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">코워크</span><span class="tool">스킬</span></div>
+    <p class="where"><b>어디서</b>Cowork · 강사 계정에 quote-review 등록</p><div class="fuse"><div class="frow"><span class="fb virt">강사 제작</span><span class="fname">04_quote-review.zip · SKILL.md</span></div><div class="frow"><span class="fb cust">고객사 제공</span><span class="fname">03_업체견적서 A사(.xlsx)·B사(.pdf)·C사(.pdf)</span></div><div class="fnote">코워크에서 폴더의 견적서마다 스킬을 적용합니다(강사)</div></div>
+    <div class="prompt" id="pw-28" data-open="false"><pre id="pr-28">연결한 폴더의 견적서를 하나씩 검토해서
+업체별 검토서를 &#x27;결과&#x27; 폴더에 만들어줘.
+기준은 같은 폴더의 시방서야.
+원본 파일은 수정하지 마.</pre></div>
+    <p class="check" id="ck-28" hidden><span class="k">검수</span>업체별 검토서가 같은 다섯 부분인지, 빈칸이 “확인 필요”로 남았는지 함께 봅니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="28" aria-expanded="false" aria-controls="pw-28 ck-28">펼치기 <span class="lines">74자</span></button>
+      <button type="button" class="copy" data-i="28" aria-label="코워크 시연 · 폴더의 견적서마다 스킬 적용 (강사) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="edu" data-group="u5" aria-labelledby="h-u5">
+  <div class="ghead"><h2 id="h-u5"><span class="gk edu">5교시</span>터미널과 클로드 코드 이해 <span class="n">1개 · 60분 · 교안 126~154쪽</span></h2>
+  <p class="bridges"><span class="bl">교육 후 이어 쓰기</span><a class="bridge" href="#자동-01" data-go="자동-01"><b>자동-01</b> 프로젝트 지침을 CLAUDE.md 초안으로</a><a class="bridge" href="#자동-04" data-go="자동-04"><b>자동-04</b> 클로드 코드에 Plan 모드로 계획 먼저 받기</a><a class="bridge" href="#자동-05" data-go="자동-05"><b>자동-05</b> 월별 집계 스크립트 요청</a></p></div>
+  <div class="grid"><article class="card edu" id="C-5-1" data-track="edu" data-unit="5" data-ft="none" data-fk="" data-tools="클로드 코드" data-q="c-5-1 131쪽 5교시 터미널과 클로드 코드 이해 터미널 조회 명령 다섯 개 터미널을 열고 조회 전용 명령 다섯 개를 순서대로 쳐 봅니다. pwd
+ls
+cd [폴더명]
+cd ..
+exit 한 줄씩 직접 칩니다. [폴더명]은 괄호 없이 실제 폴더 이름으로 바꿉니다. pwd 출력이 cd 전후로 달라지는지 확인합니다. 모두 조회 전용입니다. 터미널에서 조회 명령만 실행합니다(파일 수정 없음) windows: 시작 › powershell · macos: command+space › 터미널 클로드 코드">
+  <header class="card-h">
+    <div class="card-top"><span class="rib edu">교육 중 · 교안 131쪽</span><span class="tagid">5교시</span></div>
+    <h3>터미널 조회 명령 다섯 개</h3>
+    <p class="when">터미널을 열고 조회 전용 명령 다섯 개를 순서대로 쳐 봅니다.</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">클로드 코드</span></div>
+    <p class="where"><b>어디서</b>Windows: 시작 › powershell · macOS: Command+Space › 터미널</p><div class="fuse"><div class="frow"><span class="fb none">파일 없음</span><span class="fnote">터미널에서 조회 명령만 실행합니다(파일 수정 없음)</span></div></div>
+    <div class="prompt" id="pw-29" data-open="false"><pre id="pr-29">pwd
+ls
+cd <mark class="ph">[폴더명]</mark>
+cd ..
+exit</pre></div>
+    <p class="check" id="ck-29" hidden><span class="k">검수</span>한 줄씩 직접 칩니다. [폴더명]은 괄호 없이 실제 폴더 이름으로 바꿉니다. pwd 출력이 cd 전후로 달라지는지 확인합니다. 모두 조회 전용입니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="29" aria-expanded="false" aria-controls="pw-29 ck-29">펼치기 <span class="lines">22자</span></button>
+      <button type="button" class="copy" data-i="29" aria-label="터미널 조회 명령 다섯 개 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+      <div class="divider" data-track="work">교육 후 · 업무 복귀</div>
+      <p class="worknote" data-track="work">업무 복귀 프롬프트는 회사가 허용한 자료만 쓰고, 실습용 지침의 금지 문구(“배포된 실습 자료 외 사내 자료는 다루지 않는다”)를 업무용으로 고친 프로젝트에서 씁니다.</p>
+<section class="group" data-track="work" data-group="spec" aria-labelledby="h-spec">
+  <div class="ghead"><h2 id="h-spec"><span class="gk work">단계</span>시방·제안 검토 <span class="n">8개</span></h2></div>
+  <div class="grid"><article class="card work" id="시방-01" data-track="work" data-cat="spec" data-sens="in" data-new="0" data-cf="0" data-tools="프로젝트" data-q="시방-01 변경된 시방서와 이전 시방서 대조 시방서 개정본을 받았을 때 첨부한 [변경된 시방서]를 프로젝트 지식의 이전 시방서와 비교해줘.
+[조항 | 이전 내용 | 변경 내용 | 영향받는 검토 항목] 표로
+바뀐 조항만 정리하고, 대조표가 있으면 다시 확인할 행도 알려줘.
+표현만 바뀐 것과 기준값이 바뀐 것을 구분해줘. 조항 번호와 기준값을 두 원문에서 직접 확인합니다. 변경본이 최신인지 문서번호·날짜를 봅니다. 시방·제안 검토  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-01</span></div>
+    <h3>변경된 시방서와 이전 시방서 대조</h3>
+    <p class="when">시방서 개정본을 받았을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-30" data-open="false"><pre id="pr-30">첨부한 <mark class="ph">[변경된 시방서]</mark>를 프로젝트 지식의 이전 시방서와 비교해줘.
+[조항 | 이전 내용 | 변경 내용 | 영향받는 검토 항목] 표로
+바뀐 조항만 정리하고, 대조표가 있으면 다시 확인할 행도 알려줘.
+표현만 바뀐 것과 기준값이 바뀐 것을 구분해줘.</pre></div>
+    <p class="check" id="ck-30" hidden><span class="k">검수</span>조항 번호와 기준값을 두 원문에서 직접 확인합니다. 변경본이 최신인지 문서번호·날짜를 봅니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="30" aria-expanded="false" aria-controls="pw-30 ck-30">펼치기 <span class="lines">135자</span></button>
+      <button type="button" class="copy" data-i="30" aria-label="변경된 시방서와 이전 시방서 대조 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="시방-02" data-track="work" data-cat="spec" data-sens="in" data-new="0" data-cf="0" data-tools="프로젝트" data-q="시방-02 발주처 질의 회신을 반영해 대조표 갱신 발주처 질의 회신을 받은 뒤 아래 발주처 질의 회신을 반영해 방금 대조표를 갱신해줘.
+판정이 바뀐 행만 [번호 | 검토 항목 | 이전 판정 | 새 판정 | 근거(회신 문장)]로 보여주고,
+회신에 없는 내용은 이전 판정을 그대로 둬.
+
+[질의 회신 붙여넣기] 회신 문장을 근거로 인용했는지, 회신이 언급하지 않은 행까지 바꾸지 않았는지 확인합니다. 시방·제안 검토  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-02</span></div>
+    <h3>발주처 질의 회신을 반영해 대조표 갱신</h3>
+    <p class="when">발주처 질의 회신을 받은 뒤</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-31" data-open="false"><pre id="pr-31">아래 발주처 질의 회신을 반영해 방금 대조표를 갱신해줘.
+판정이 바뀐 행만 [번호 | 검토 항목 | 이전 판정 | 새 판정 | 근거(회신 문장)]로 보여주고,
+회신에 없는 내용은 이전 판정을 그대로 둬.
+
+<mark class="ph">[질의 회신 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-31" hidden><span class="k">검수</span>회신 문장을 근거로 인용했는지, 회신이 언급하지 않은 행까지 바꾸지 않았는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="31" aria-expanded="false" aria-controls="pw-31 ck-31">펼치기 <span class="lines">123자</span></button>
+      <button type="button" class="copy" data-i="31" aria-label="발주처 질의 회신을 반영해 대조표 갱신 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="시방-03" data-track="work" data-cat="spec" data-sens="in" data-new="0" data-cf="1" data-tools="프로젝트" data-q="시방-03 deviation sheet 초안 만들기 제안서 제출 전 차이 목록을 낼 때 방금 대조표에서 미흡·누락 항목만 골라
+[no | 시방 조항 | 시방 요구사항 | 당사 제안 내용 | 차이 사유 | 비고]
+표로 deviation sheet 초안을 만들어줘.
+차이 사유는 제안서에 적힌 내용만 쓰고, 없으면 &#x27;사유 확인 필요&#x27;로 둬. 차이 사유를 ai가 지어내지 않았는지 봅니다. 제출 여부와 문구는 설계 담당이 결정합니다. 시방·제안 검토 02_발주처_공사시방서 · 02_당사_기술제안서 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-03</span></div>
+    <h3>Deviation Sheet 초안 만들기</h3>
+    <p class="when">제안서 제출 전 차이 목록을 낼 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>02_발주처_공사시방서 · 02_당사_기술제안서</p>
+    <div class="prompt" id="pw-32" data-open="false"><pre id="pr-32">방금 대조표에서 미흡·누락 항목만 골라
+[No | 시방 조항 | 시방 요구사항 | 당사 제안 내용 | 차이 사유 | 비고]
+표로 Deviation Sheet 초안을 만들어줘.
+차이 사유는 제안서에 적힌 내용만 쓰고, 없으면 &#x27;사유 확인 필요&#x27;로 둬.</pre></div>
+    <p class="check" id="ck-32" hidden><span class="k">검수</span>차이 사유를 AI가 지어내지 않았는지 봅니다. 제출 여부와 문구는 설계 담당이 결정합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="32" aria-expanded="false" aria-controls="pw-32 ck-32">펼치기 <span class="lines">136자</span></button>
+      <button type="button" class="copy" data-i="32" aria-label="Deviation Sheet 초안 만들기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="시방-04" data-track="work" data-cat="spec" data-sens="in" data-new="0" data-cf="0" data-tools="프로젝트" data-q="시방-04 제안서 수정 전·후 문구 비교 제안서 문구를 고친 뒤 기준 충족을 다시 볼 때 아래 수정 전·후 제안서 문구를 비교해줘.
+[항목 | 수정 전 | 수정 후 | 시방 기준(조항) | 판정] 표로 정리하고,
+수정 후에도 기준에 못 미치면 남은 차이를 적어줘.
+
+[수정 전 문구]
+[수정 후 문구] 판정은 지침의 네 가지로만 나왔는지, 수치가 원문과 같은지 확인합니다. 시방·제안 검토  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-04</span></div>
+    <h3>제안서 수정 전·후 문구 비교</h3>
+    <p class="when">제안서 문구를 고친 뒤 기준 충족을 다시 볼 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-33" data-open="false"><pre id="pr-33">아래 수정 전·후 제안서 문구를 비교해줘.
+[항목 | 수정 전 | 수정 후 | 시방 기준(조항) | 판정] 표로 정리하고,
+수정 후에도 기준에 못 미치면 남은 차이를 적어줘.
+
+<mark class="ph">[수정 전 문구]</mark>
+<mark class="ph">[수정 후 문구]</mark></pre></div>
+    <p class="check" id="ck-33" hidden><span class="k">검수</span>판정은 지침의 네 가지로만 나왔는지, 수치가 원문과 같은지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="33" aria-expanded="false" aria-controls="pw-33 ck-33">펼치기 <span class="lines">113자</span></button>
+      <button type="button" class="copy" data-i="33" aria-label="제안서 수정 전·후 문구 비교 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="시방-05" data-track="work" data-cat="spec" data-sens="in" data-new="1" data-cf="1" data-tools="프로젝트" data-q="시방-05 시방서로 발주처 질의서(rfi) 초안 만들기 시방서에서 해석이 애매한 조항을 찾았을 때 프로젝트 지식의 시방서에서 해석이 두 가지 이상 가능하거나 수치·조건이 빠진 조항을 찾아 발주처 질의서 초안을 만들어줘.
+[no | 조항 | 원문 요지 | 애매한 점 | 질의 문장(예·아니오나 수치로 답할 수 있게) | 회신 요청일]
+질의 문장에 우리 측 해석이나 제안 내용은 넣지 마. 회신 요청일은 [날짜]로 비워 둬. 질의 대상 조항이 실제로 애매한지 담당 엔지니어가 원문으로 확인한 뒤 보냅니다. 시방·제안 검토 02_발주처_공사시방서 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-05</span><span class="newb">추가 제안</span></div>
+    <h3>시방서로 발주처 질의서(RFI) 초안 만들기</h3>
+    <p class="when">시방서에서 해석이 애매한 조항을 찾았을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>02_발주처_공사시방서</p>
+    <div class="prompt" id="pw-34" data-open="false"><pre id="pr-34">프로젝트 지식의 시방서에서 해석이 두 가지 이상 가능하거나 수치·조건이 빠진 조항을 찾아 발주처 질의서 초안을 만들어줘.
+[No | 조항 | 원문 요지 | 애매한 점 | 질의 문장(예·아니오나 수치로 답할 수 있게) | 회신 요청일]
+질의 문장에 우리 측 해석이나 제안 내용은 넣지 마. 회신 요청일은 <mark class="ph">[날짜]</mark>로 비워 둬.</pre></div>
+    <p class="check" id="ck-34" hidden><span class="k">검수</span>질의 대상 조항이 실제로 애매한지 담당 엔지니어가 원문으로 확인한 뒤 보냅니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="34" aria-expanded="false" aria-controls="pw-34 ck-34">펼치기 <span class="lines">178자</span></button>
+      <button type="button" class="copy" data-i="34" aria-label="시방서로 발주처 질의서(RFI) 초안 만들기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="시방-06" data-track="work" data-cat="spec" data-sens="ok" data-new="1" data-cf="0" data-tools="프로젝트" data-q="시방-06 평가 기준표로 제안서 목차 맞추기 제안서 작성을 시작할 때 첨부한 [제안요청서·평가 기준표]의 평가 항목마다 제안서 어느 장에서 답할지 정리해줘.
+[평가 항목 | 배점 | 대응 목차(장·절) | 꼭 들어갈 근거 자료 | 원문 위치]
+배점이 큰 항목부터 분량 비중을 제안하고, 평가 기준에 없는 장은 ‘평가 외’로 표시해줘. 배점과 항목명은 제안요청서 원문과 대조합니다. 시방·제안 검토  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-06</span><span class="newb">추가 제안</span></div>
+    <h3>평가 기준표로 제안서 목차 맞추기</h3>
+    <p class="when">제안서 작성을 시작할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-35" data-open="false"><pre id="pr-35">첨부한 <mark class="ph">[제안요청서·평가 기준표]</mark>의 평가 항목마다 제안서 어느 장에서 답할지 정리해줘.
+[평가 항목 | 배점 | 대응 목차(장·절) | 꼭 들어갈 근거 자료 | 원문 위치]
+배점이 큰 항목부터 분량 비중을 제안하고, 평가 기준에 없는 장은 ‘평가 외’로 표시해줘.</pre></div>
+    <p class="check" id="ck-35" hidden><span class="k">검수</span>배점과 항목명은 제안요청서 원문과 대조합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="35" aria-expanded="false" aria-controls="pw-35 ck-35">펼치기 <span class="lines">145자</span></button>
+      <button type="button" class="copy" data-i="35" aria-label="평가 기준표로 제안서 목차 맞추기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="시방-07" data-track="work" data-cat="spec" data-sens="in" data-new="1" data-cf="1" data-tools="프로젝트" data-q="시방-07 성능보증·시험 조건 표 뽑기 계약·시운전 계획을 세우기 전 프로젝트 지식의 시방서와 첨부한 [계약 조건]에서 성능보증과 시험 항목만 뽑아줘.
+[항목 | 보증·기준값(단위) | 측정 조건 | 시험 방법·시점 | 미달 시 조치 | 근거 조항]
+문서마다 값이 다르면 단정하지 말고 나란히 적고, 없는 조건은 ‘확인되지 않음’으로 둬. 계약 우선순위에 따른 판단은 계약 담당자가 합니다. 시방·제안 검토 02_발주처_공사시방서 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-07</span><span class="newb">추가 제안</span></div>
+    <h3>성능보증·시험 조건 표 뽑기</h3>
+    <p class="when">계약·시운전 계획을 세우기 전</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>02_발주처_공사시방서</p>
+    <div class="prompt" id="pw-36" data-open="false"><pre id="pr-36">프로젝트 지식의 시방서와 첨부한 <mark class="ph">[계약 조건]</mark>에서 성능보증과 시험 항목만 뽑아줘.
+[항목 | 보증·기준값(단위) | 측정 조건 | 시험 방법·시점 | 미달 시 조치 | 근거 조항]
+문서마다 값이 다르면 단정하지 말고 나란히 적고, 없는 조건은 ‘확인되지 않음’으로 둬.</pre></div>
+    <p class="check" id="ck-36" hidden><span class="k">검수</span>계약 우선순위에 따른 판단은 계약 담당자가 합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="36" aria-expanded="false" aria-controls="pw-36 ck-36">펼치기 <span class="lines">148자</span></button>
+      <button type="button" class="copy" data-i="36" aria-label="성능보증·시험 조건 표 뽑기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="시방-08" data-track="work" data-cat="spec" data-sens="in" data-new="1" data-cf="1" data-tools="아티팩트" data-q="시방-08 대조 결과를 판정별 한눈 보기로 대조표가 길어 팀장 보고 전에 요약이 필요할 때 방금 대조표를 별도 창(아티팩트)에 한눈 보기로 만들어줘.
+1) 판정(충족·미흡·누락·확인 필요)별 건수 막대 차트
+2) 미흡·누락 항목만 모은 표 [번호 | 검토 항목 | 판정 | 근거 조항]
+숫자는 대조표에서 세어 넣고, 대조표에 없는 항목은 만들지 마. 차트 건수가 대조표 행 수와 맞는지 직접 세어 봅니다. 시방·제안 검토 02_발주처_공사시방서 · 02_당사_기술제안서 아티팩트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">시방-08</span><span class="newb">추가 제안</span></div>
+    <h3>대조 결과를 판정별 한눈 보기로</h3>
+    <p class="when">대조표가 길어 팀장 보고 전에 요약이 필요할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">아티팩트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>02_발주처_공사시방서 · 02_당사_기술제안서</p>
+    <div class="prompt" id="pw-37" data-open="false"><pre id="pr-37">방금 대조표를 별도 창(아티팩트)에 한눈 보기로 만들어줘.
+1) 판정(충족·미흡·누락·확인 필요)별 건수 막대 차트
+2) 미흡·누락 항목만 모은 표 [번호 | 검토 항목 | 판정 | 근거 조항]
+숫자는 대조표에서 세어 넣고, 대조표에 없는 항목은 만들지 마.</pre></div>
+    <p class="check" id="ck-37" hidden><span class="k">검수</span>차트 건수가 대조표 행 수와 맞는지 직접 세어 봅니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="37" aria-expanded="false" aria-controls="pw-37 ck-37">펼치기 <span class="lines">141자</span></button>
+      <button type="button" class="copy" data-i="37" aria-label="대조 결과를 판정별 한눈 보기로 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="work" data-group="quote" aria-labelledby="h-quote">
+  <div class="ghead"><h2 id="h-quote"><span class="gk work">단계</span>견적·구매 검토 <span class="n">7개</span></h2></div>
+  <div class="grid"><article class="card work" id="견적-01" data-track="work" data-cat="quote" data-sens="in" data-new="0" data-cf="1" data-tools="프로젝트" data-q="견적-01 견적 상업 조건만 따로 비교 사양 비교 뒤 지급·납기·하자 조건을 볼 때 첨부한 견적서들의 상업 조건만 비교해줘.
+[항목 | a사 | b사 | c사 | 시방서 기준(조항)] 표로 지급 조건, 납기(인도 조건 포함),
+하자보증 기산점과 기간, 견적 유효기간, 가격 조정 조건, 제외사항을 정리하고,
+시방서와 다른 조건은 근거 조항과 함께 표시해줘. 하자 기산점(시운전·납품·선적·인수)이 다르다는 점과 c사 환율 ±3% 조건이 나왔는지 확인합니다. 견적·구매 검토 03_업체견적서 a·b·c사 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">견적-01</span></div>
+    <h3>견적 상업 조건만 따로 비교</h3>
+    <p class="when">사양 비교 뒤 지급·납기·하자 조건을 볼 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>03_업체견적서 A·B·C사</p>
+    <div class="prompt" id="pw-38" data-open="false"><pre id="pr-38">첨부한 견적서들의 상업 조건만 비교해줘.
+[항목 | A사 | B사 | C사 | 시방서 기준(조항)] 표로 지급 조건, 납기(인도 조건 포함),
+하자보증 기산점과 기간, 견적 유효기간, 가격 조정 조건, 제외사항을 정리하고,
+시방서와 다른 조건은 근거 조항과 함께 표시해줘.</pre></div>
+    <p class="check" id="ck-38" hidden><span class="k">검수</span>하자 기산점(시운전·납품·선적·인수)이 다르다는 점과 C사 환율 ±3% 조건이 나왔는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="38" aria-expanded="false" aria-controls="pw-38 ck-38">펼치기 <span class="lines">149자</span></button>
+      <button type="button" class="copy" data-i="38" aria-label="견적 상업 조건만 따로 비교 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="견적-02" data-track="work" data-cat="quote" data-sens="in" data-new="0" data-cf="0" data-tools="스킬|대화" data-q="견적-02 업체별 질의서 메일 초안 검토서의 업체 질의 목록을 메일로 보낼 때 방금 검토서의 업체 질의 목록으로 [업체명] 담당자에게 보낼 질의 메일 초안을 써줘.
+인사 → 질의 목적 → 번호 붙인 질의 → 회신 요청 기한([날짜]) 순서로,
+정중한 존댓말로 쓰고, 질의 목록을 뺀 본문은 5문장 이내로 해줘.
+판정·내부 금액 계산·다른 업체 정보는 쓰지 말고, 질의는 사실 확인 문장으로만 써줘. 내부 판정이나 다른 업체 정보가 메일에 들어가지 않았는지 꼭 확인합니다. 발송은 사람이 합니다. 견적·구매 검토  스킬 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">견적-02</span></div>
+    <h3>업체별 질의서 메일 초안</h3>
+    <p class="when">검토서의 업체 질의 목록을 메일로 보낼 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-39" data-open="false"><pre id="pr-39">방금 검토서의 업체 질의 목록으로 <mark class="ph">[업체명]</mark> 담당자에게 보낼 질의 메일 초안을 써줘.
+인사 → 질의 목적 → 번호 붙인 질의 → 회신 요청 기한(<mark class="ph">[날짜]</mark>) 순서로,
+정중한 존댓말로 쓰고, 질의 목록을 뺀 본문은 5문장 이내로 해줘.
+판정·내부 금액 계산·다른 업체 정보는 쓰지 말고, 질의는 사실 확인 문장으로만 써줘.</pre></div>
+    <p class="check" id="ck-39" hidden><span class="k">검수</span>내부 판정이나 다른 업체 정보가 메일에 들어가지 않았는지 꼭 확인합니다. 발송은 사람이 합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="39" aria-expanded="false" aria-controls="pw-39 ck-39">펼치기 <span class="lines">175자</span></button>
+      <button type="button" class="copy" data-i="39" aria-label="업체별 질의서 메일 초안 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="견적-03" data-track="work" data-cat="quote" data-sens="in" data-new="0" data-cf="1" data-tools="프로젝트" data-q="견적-03 납기와 공정 영향 정리 견적 납기가 현장 일정에 맞는지 볼 때 첨부한 견적서별 납기를 시방서의 현장 반입 기한과 비교해줘.
+[업체 | 견적 납기 | 인도 조건 | 현장 반입까지 추가 기간 | 기한 대비 | 확인할 점] 표로 정리하고,
+인도 조건 때문에 반입 시점이 불분명하면 &#x27;확인 필요&#x27;로 둬. c사(24주 cif 인천 + 통관·내륙운송 약 2주)와 b사(120일 공장 상차도)의 반입 시점 계산을 직접 확인합니다. 견적·구매 검토 03_업체견적서 a·b·c사 · 02_발주처_공사시방서 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">견적-03</span></div>
+    <h3>납기와 공정 영향 정리</h3>
+    <p class="when">견적 납기가 현장 일정에 맞는지 볼 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>03_업체견적서 A·B·C사 · 02_발주처_공사시방서</p>
+    <div class="prompt" id="pw-40" data-open="false"><pre id="pr-40">첨부한 견적서별 납기를 시방서의 현장 반입 기한과 비교해줘.
+[업체 | 견적 납기 | 인도 조건 | 현장 반입까지 추가 기간 | 기한 대비 | 확인할 점] 표로 정리하고,
+인도 조건 때문에 반입 시점이 불분명하면 &#x27;확인 필요&#x27;로 둬.</pre></div>
+    <p class="check" id="ck-40" hidden><span class="k">검수</span>C사(24주 CIF 인천 + 통관·내륙운송 약 2주)와 B사(120일 공장 상차도)의 반입 시점 계산을 직접 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="40" aria-expanded="false" aria-controls="pw-40 ck-40">펼치기 <span class="lines">128자</span></button>
+      <button type="button" class="copy" data-i="40" aria-label="납기와 공정 영향 정리 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="견적-04" data-track="work" data-cat="quote" data-sens="in" data-new="1" data-cf="1" data-tools="프로젝트|파일 생성" data-q="견적-04 견적 금액·수량 검산 견적서 합계가 맞는지 빠르게 볼 때 첨부한 견적서들의 금액을 검산해줘.
+1) 단가×수량=금액이 맞지 않는 행
+2) 소계·부가세·합계 차이
+3) 단위가 섞인 행(식·대·set 등)과 제외 항목
+결과는 [업체 | 행 | 견적서 값 | 계산 값 | 차이] 표로 주고, 같은 검산을 할 수 있는 엑셀 수식도 적어줘. claude 계산은 참고용입니다. 엑셀 수식 결과를 기준으로 판단합니다. 견적·구매 검토 03_업체견적서 a·b·c사 프로젝트 파일 생성">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">견적-04</span><span class="newb">추가 제안</span></div>
+    <h3>견적 금액·수량 검산</h3>
+    <p class="when">견적서 합계가 맞는지 빠르게 볼 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span><span class="tool">파일 생성</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>03_업체견적서 A·B·C사</p>
+    <div class="prompt" id="pw-41" data-open="false"><pre id="pr-41">첨부한 견적서들의 금액을 검산해줘.
+1) 단가×수량=금액이 맞지 않는 행
+2) 소계·부가세·합계 차이
+3) 단위가 섞인 행(식·대·set 등)과 제외 항목
+결과는 [업체 | 행 | 견적서 값 | 계산 값 | 차이] 표로 주고, 같은 검산을 할 수 있는 엑셀 수식도 적어줘.</pre></div>
+    <p class="check" id="ck-41" hidden><span class="k">검수</span>Claude 계산은 참고용입니다. 엑셀 수식 결과를 기준으로 판단합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="41" aria-expanded="false" aria-controls="pw-41 ck-41">펼치기 <span class="lines">148자</span></button>
+      <button type="button" class="copy" data-i="41" aria-label="견적 금액·수량 검산 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="견적-05" data-track="work" data-cat="quote" data-sens="in" data-new="1" data-cf="1" data-tools="프로젝트" data-q="견적-05 업체 제출 사양서의 시방 적합성 대조 업체가 기술 사양서·카탈로그를 보냈을 때 첨부한 [업체 사양서]를 프로젝트 지식의 시방서 요구사항과 대조해줘.
+지침의 판정 기준(충족·미흡·누락·확인 필요)과 결과 양식을 그대로 쓰고,
+사양서에 수치가 없으면 ‘확인 필요’로 두고 업체 질의 항목으로 따로 모아줘. 카탈로그 수치가 이 사업 납품 모델의 값인지 업체에 확인합니다. 견적·구매 검토 02_발주처_공사시방서 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">견적-05</span><span class="newb">추가 제안</span></div>
+    <h3>업체 제출 사양서의 시방 적합성 대조</h3>
+    <p class="when">업체가 기술 사양서·카탈로그를 보냈을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>02_발주처_공사시방서</p>
+    <div class="prompt" id="pw-42" data-open="false"><pre id="pr-42">첨부한 <mark class="ph">[업체 사양서]</mark>를 프로젝트 지식의 시방서 요구사항과 대조해줘.
+지침의 판정 기준(충족·미흡·누락·확인 필요)과 결과 양식을 그대로 쓰고,
+사양서에 수치가 없으면 ‘확인 필요’로 두고 업체 질의 항목으로 따로 모아줘.</pre></div>
+    <p class="check" id="ck-42" hidden><span class="k">검수</span>카탈로그 수치가 이 사업 납품 모델의 값인지 업체에 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="42" aria-expanded="false" aria-controls="pw-42 ck-42">펼치기 <span class="lines">122자</span></button>
+      <button type="button" class="copy" data-i="42" aria-label="업체 제출 사양서의 시방 적합성 대조 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="견적-06" data-track="work" data-cat="quote" data-sens="in" data-new="1" data-cf="0" data-tools="대화" data-q="견적-06 구매 품의서 초안 업체를 정하고 내부 결재를 올릴 때 아래 비교 결과와 선정 사유로 구매 품의서 초안을 써줘.
+구성: 구매 목적 / 품목·사양 / 업체 비교 요약(표) / 선정 업체와 사유 / 예산·계약 조건 / 첨부 목록
+선정 사유는 내가 적은 내용만 쓰고, 근거 없는 장점은 추가하지 마.
+[비교 결과 붙여넣기]
+[선정 사유 붙여넣기] 금액과 업체명은 견적서 원본과 대조한 뒤 결재를 올립니다. 견적·구매 검토  대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">견적-06</span><span class="newb">추가 제안</span></div>
+    <h3>구매 품의서 초안</h3>
+    <p class="when">업체를 정하고 내부 결재를 올릴 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-43" data-open="false"><pre id="pr-43">아래 비교 결과와 선정 사유로 구매 품의서 초안을 써줘.
+구성: 구매 목적 / 품목·사양 / 업체 비교 요약(표) / 선정 업체와 사유 / 예산·계약 조건 / 첨부 목록
+선정 사유는 내가 적은 내용만 쓰고, 근거 없는 장점은 추가하지 마.
+<mark class="ph">[비교 결과 붙여넣기]</mark>
+<mark class="ph">[선정 사유 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-43" hidden><span class="k">검수</span>금액과 업체명은 견적서 원본과 대조한 뒤 결재를 올립니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="43" aria-expanded="false" aria-controls="pw-43 ck-43">펼치기 <span class="lines">155자</span></button>
+      <button type="button" class="copy" data-i="43" aria-label="구매 품의서 초안 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="견적-07" data-track="work" data-cat="quote" data-sens="in" data-new="1" data-cf="0" data-tools="스킬|대화" data-q="견적-07 업체 회신으로 질의 목록 상태 갱신 업체 회신 메일을 받은 뒤 아래 업체 회신 메일을 방금 검토서의 업체 질의 목록과 맞춰줘.
+[질의 번호 | 질의 내용 | 회신 요지(원문 인용) | 상태(해소·부분 해소·미회신) | 추가 확인]
+회신에 없는 질의는 ‘미회신’으로 두고, 회신 내용으로 판정을 바꿔야 하면 바꿀 행만 따로 표시해줘.
+[회신 메일 붙여넣기 — 담당자 이름·연락처는 지우고] ‘가능할 것 같다’ 같은 표현은 해소로 보지 말고 서면 확인을 다시 요청합니다. 견적·구매 검토  스킬 대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">견적-07</span><span class="newb">추가 제안</span></div>
+    <h3>업체 회신으로 질의 목록 상태 갱신</h3>
+    <p class="when">업체 회신 메일을 받은 뒤</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-44" data-open="false"><pre id="pr-44">아래 업체 회신 메일을 방금 검토서의 업체 질의 목록과 맞춰줘.
+[질의 번호 | 질의 내용 | 회신 요지(원문 인용) | 상태(해소·부분 해소·미회신) | 추가 확인]
+회신에 없는 질의는 ‘미회신’으로 두고, 회신 내용으로 판정을 바꿔야 하면 바꿀 행만 따로 표시해줘.
+<mark class="ph">[회신 메일 붙여넣기 — 담당자 이름·연락처는 지우고]</mark></pre></div>
+    <p class="check" id="ck-44" hidden><span class="k">검수</span>‘가능할 것 같다’ 같은 표현은 해소로 보지 말고 서면 확인을 다시 요청합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="44" aria-expanded="false" aria-controls="pw-44 ck-44">펼치기 <span class="lines">178자</span></button>
+      <button type="button" class="copy" data-i="44" aria-label="업체 회신으로 질의 목록 상태 갱신 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="work" data-group="report" aria-labelledby="h-report">
+  <div class="ghead"><h2 id="h-report"><span class="gk work">공통</span>보고·소통 <span class="n">6개</span></h2></div>
+  <div class="grid"><article class="card work" id="보고-01" data-track="work" data-cat="report" data-sens="in" data-new="0" data-cf="0" data-tools="프로젝트" data-q="보고-01 팀장 보고용 검토 결과 요약 검토 결과를 팀장에게 올릴 때 방금 결과를 팀장 보고용으로 정리해줘.
+1) 3줄 요약
+2) 결정이 필요한 사항(선택지만, 추천은 하지 마)
+3) 추가 확인이 필요한 사항
+숫자와 조항은 표에 있는 그대로 쓰고, 표에 없는 내용은 넣지 마. “추천”이나 “채택” 같은 결론이 들어가지 않았는지 봅니다. 결정은 보고받는 사람이 합니다. 보고·소통  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">보고-01</span></div>
+    <h3>팀장 보고용 검토 결과 요약</h3>
+    <p class="when">검토 결과를 팀장에게 올릴 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-45" data-open="false"><pre id="pr-45">방금 결과를 팀장 보고용으로 정리해줘.
+1) 3줄 요약
+2) 결정이 필요한 사항(선택지만, 추천은 하지 마)
+3) 추가 확인이 필요한 사항
+숫자와 조항은 표에 있는 그대로 쓰고, 표에 없는 내용은 넣지 마.</pre></div>
+    <p class="check" id="ck-45" hidden><span class="k">검수</span>“추천”이나 “채택” 같은 결론이 들어가지 않았는지 봅니다. 결정은 보고받는 사람이 합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="45" aria-expanded="false" aria-controls="pw-45 ck-45">펼치기 <span class="lines">111자</span></button>
+      <button type="button" class="copy" data-i="45" aria-label="팀장 보고용 검토 결과 요약 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="보고-02" data-track="work" data-cat="report" data-sens="in" data-new="1" data-cf="0" data-tools="프로젝트" data-q="보고-02 주간 공정 보고를 프로젝트 양식으로 매주 같은 양식으로 보고할 때 이 프로젝트 지침의 보고 양식으로 이번 주 공정 보고를 써줘.
+구성: 계획 대비 실적 / 지연 항목과 원인(메모 표현 그대로) / 만회 대책(메모에 있는 것만) / 결정 요청 사항
+메모에 없는 날짜·약속은 넣지 마.
+[이번 주 메모 붙여넣기] 실적 %와 날짜는 공정표 원본으로 확인합니다. 양식은 지침에 한 번만 적어 두면 매주 같습니다. 보고·소통  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">보고-02</span><span class="newb">추가 제안</span></div>
+    <h3>주간 공정 보고를 프로젝트 양식으로</h3>
+    <p class="when">매주 같은 양식으로 보고할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-46" data-open="false"><pre id="pr-46">이 프로젝트 지침의 보고 양식으로 이번 주 공정 보고를 써줘.
+구성: 계획 대비 실적 / 지연 항목과 원인(메모 표현 그대로) / 만회 대책(메모에 있는 것만) / 결정 요청 사항
+메모에 없는 날짜·약속은 넣지 마.
+<mark class="ph">[이번 주 메모 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-46" hidden><span class="k">검수</span>실적 %와 날짜는 공정표 원본으로 확인합니다. 양식은 지침에 한 번만 적어 두면 매주 같습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="46" aria-expanded="false" aria-controls="pw-46 ck-46">펼치기 <span class="lines">132자</span></button>
+      <button type="button" class="copy" data-i="46" aria-label="주간 공정 보고를 프로젝트 양식으로 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="보고-03" data-track="work" data-cat="report" data-sens="in" data-new="1" data-cf="0" data-tools="대화" data-q="보고-03 긴 메일 스레드 요약 쟁점이 여러 번 오간 메일을 정리할 때 아래는 개인정보를 지운 메일 스레드야(오래된 순).
+1) 쟁점 3줄
+2) [날짜 | 보낸 쪽(부서·기관) | 요청 | 상태(완료·대기·미정)] 표
+3) 내가 회신해야 할 항목
+메일에 없는 합의나 일정은 쓰지 마.
+[메일 스레드 붙여넣기] 붙여 넣기 전 실명·연락처·계약 금액을 지웠는지 확인합니다. 보고·소통  대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">보고-03</span><span class="newb">추가 제안</span></div>
+    <h3>긴 메일 스레드 요약</h3>
+    <p class="when">쟁점이 여러 번 오간 메일을 정리할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-47" data-open="false"><pre id="pr-47">아래는 개인정보를 지운 메일 스레드야(오래된 순).
+1) 쟁점 3줄
+2) [날짜 | 보낸 쪽(부서·기관) | 요청 | 상태(완료·대기·미정)] 표
+3) 내가 회신해야 할 항목
+메일에 없는 합의나 일정은 쓰지 마.
+<mark class="ph">[메일 스레드 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-47" hidden><span class="k">검수</span>붙여 넣기 전 실명·연락처·계약 금액을 지웠는지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="47" aria-expanded="false" aria-controls="pw-47 ck-47">펼치기 <span class="lines">127자</span></button>
+      <button type="button" class="copy" data-i="47" aria-label="긴 메일 스레드 요약 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="보고-04" data-track="work" data-cat="report" data-sens="in" data-new="1" data-cf="0" data-tools="대화" data-q="보고-04 해외 업체에 보낼 영문 질의 메일 해외 기자재 업체에 사양·납기를 물을 때 아래 질의 목록으로 해외 업체 담당자에게 보낼 영문 메일을 써줘.
+구성: 인사 / 목적 1문장 / 번호 붙인 질의 / 회신 요청일([날짜])
+질의는 사실 확인 문장으로만 쓰고, 우리 예산·다른 업체 정보·내부 판정은 넣지 마. 영문 아래에 국문 대역을 붙여줘.
+[질의 목록 붙여넣기] 단위(gpm, kw, mm)와 인도 조건(fob·cif 등) 표기를 원문과 대조합니다. 보고·소통  대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">보고-04</span><span class="newb">추가 제안</span></div>
+    <h3>해외 업체에 보낼 영문 질의 메일</h3>
+    <p class="when">해외 기자재 업체에 사양·납기를 물을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-48" data-open="false"><pre id="pr-48">아래 질의 목록으로 해외 업체 담당자에게 보낼 영문 메일을 써줘.
+구성: 인사 / 목적 1문장 / 번호 붙인 질의 / 회신 요청일(<mark class="ph">[날짜]</mark>)
+질의는 사실 확인 문장으로만 쓰고, 우리 예산·다른 업체 정보·내부 판정은 넣지 마. 영문 아래에 국문 대역을 붙여줘.
+<mark class="ph">[질의 목록 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-48" hidden><span class="k">검수</span>단위(gpm, kW, mm)와 인도 조건(FOB·CIF 등) 표기를 원문과 대조합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="48" aria-expanded="false" aria-controls="pw-48 ck-48">펼치기 <span class="lines">155자</span></button>
+      <button type="button" class="copy" data-i="48" aria-label="해외 업체에 보낼 영문 질의 메일 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="보고-05" data-track="work" data-cat="report" data-sens="in" data-new="1" data-cf="0" data-tools="아티팩트" data-q="보고-05 보고서를 발표 슬라이드 구조로 검토 결과를 회의에서 발표할 때 아래 검토 결과로 [장 수]장 발표 구조를 별도 창(아티팩트)에 만들어줘.
+[장 | 제목(결론형 한 문장) | 핵심 3줄 | 넣을 표·차트 | 근거]
+보고서에 없는 결론·추천은 넣지 말고, 결정이 필요한 사항은 선택지로만 써줘.
+[검토 결과 붙여넣기] 발표 자료의 숫자가 보고서 숫자와 같은지 마지막에 대조합니다. 보고·소통  아티팩트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">보고-05</span><span class="newb">추가 제안</span></div>
+    <h3>보고서를 발표 슬라이드 구조로</h3>
+    <p class="when">검토 결과를 회의에서 발표할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">아티팩트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-49" data-open="false"><pre id="pr-49">아래 검토 결과로 <mark class="ph">[장 수]</mark>장 발표 구조를 별도 창(아티팩트)에 만들어줘.
+[장 | 제목(결론형 한 문장) | 핵심 3줄 | 넣을 표·차트 | 근거]
+보고서에 없는 결론·추천은 넣지 말고, 결정이 필요한 사항은 선택지로만 써줘.
+<mark class="ph">[검토 결과 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-49" hidden><span class="k">검수</span>발표 자료의 숫자가 보고서 숫자와 같은지 마지막에 대조합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="49" aria-expanded="false" aria-controls="pw-49 ck-49">펼치기 <span class="lines">137자</span></button>
+      <button type="button" class="copy" data-i="49" aria-label="보고서를 발표 슬라이드 구조로 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="보고-06" data-track="work" data-cat="report" data-sens="in" data-new="1" data-cf="0" data-tools="아티팩트" data-q="보고-06 공정 현황 한눈 보기 만들기 여러 현장·업무 진행 상황을 한 화면으로 볼 때 아래 표로 공정 현황 한눈 보기를 별도 창(아티팩트)에 만들어줘.
+1) 항목별 계획 대비 실적 막대 차트
+2) 지연 항목만 모은 표
+3) 맨 위에 기준일 표시
+표에 없는 값은 비워 두고, 색은 정상·주의·지연 세 가지만 써줘.
+[현황 표 붙여넣기] 기준일과 숫자가 원본 표와 같은지 확인합니다. 보고·소통  아티팩트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">보고-06</span><span class="newb">추가 제안</span></div>
+    <h3>공정 현황 한눈 보기 만들기</h3>
+    <p class="when">여러 현장·업무 진행 상황을 한 화면으로 볼 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">아티팩트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-50" data-open="false"><pre id="pr-50">아래 표로 공정 현황 한눈 보기를 별도 창(아티팩트)에 만들어줘.
+1) 항목별 계획 대비 실적 막대 차트
+2) 지연 항목만 모은 표
+3) 맨 위에 기준일 표시
+표에 없는 값은 비워 두고, 색은 정상·주의·지연 세 가지만 써줘.
+<mark class="ph">[현황 표 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-50" hidden><span class="k">검수</span>기준일과 숫자가 원본 표와 같은지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="50" aria-expanded="false" aria-controls="pw-50 ck-50">펼치기 <span class="lines">133자</span></button>
+      <button type="button" class="copy" data-i="50" aria-label="공정 현황 한눈 보기 만들기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="work" data-group="std" aria-labelledby="h-std">
+  <div class="ghead"><h2 id="h-std"><span class="gk work">공통</span>기준·양식 관리 <span class="n">7개</span></h2></div>
+  <div class="grid"><article class="card work" id="기준-01" data-track="work" data-cat="std" data-sens="ok" data-new="0" data-cf="1" data-tools="프로젝트" data-q="기준-01 새 반복 분석 업무용 지침 만들기 다른 반복 분석 업무를 프로젝트로 만들 때 아래 지침은 시방서 대조 업무용이야.
+같은 구조([역할] [기준] [판정] [양식] [수치] [금지])로
+[우리 팀 반복 분석 업무]용 지침 초안을 만들어줘.
+기준 자료와 결과 표의 열 이름은 나에게 먼저 물어보고, 답을 받은 뒤에 작성해줘.
+
+[검토 프로젝트 지침 붙여넣기] 실제 고객명·금액·단가가 지침에 들어가지 않았는지 봅니다. 기준 자료는 회사가 허용한 것만 지식에 올립니다. 기준·양식 관리 02_검토프로젝트_지침.txt 프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">기준-01</span></div>
+    <h3>새 반복 분석 업무용 지침 만들기</h3>
+    <p class="when">다른 반복 분석 업무를 프로젝트로 만들 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>02_검토프로젝트_지침.txt</p>
+    <div class="prompt" id="pw-51" data-open="false"><pre id="pr-51">아래 지침은 시방서 대조 업무용이야.
+같은 구조([역할] [기준] [판정] [양식] [수치] [금지])로
+<mark class="ph">[우리 팀 반복 분석 업무]</mark>용 지침 초안을 만들어줘.
+기준 자료와 결과 표의 열 이름은 나에게 먼저 물어보고, 답을 받은 뒤에 작성해줘.
+
+<mark class="ph">[검토 프로젝트 지침 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-51" hidden><span class="k">검수</span>실제 고객명·금액·단가가 지침에 들어가지 않았는지 봅니다. 기준 자료는 회사가 허용한 것만 지식에 올립니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="51" aria-expanded="false" aria-controls="pw-51 ck-51">펼치기 <span class="lines">149자</span></button>
+      <button type="button" class="copy" data-i="51" aria-label="새 반복 분석 업무용 지침 만들기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="기준-02" data-track="work" data-cat="std" data-sens="ok" data-new="0" data-cf="0" data-tools="프로젝트" data-q="기준-02 프로젝트 지침 보강하기 (메타 프롬프트) 지침이 잘 지켜지지 않을 때 아래는 내 프로젝트 지침이야.
+[지침 붙여넣기]
+
+내 업무는 [업무 설명]이야.
+이 지침에서
+1) 빠져 있는 항목
+2) 너무 넓어서 지켜지기 어려운 항목
+을 짚어 주고,
+보완 문구만 따로 제시해줘.
+전체를 다시 쓰지는 마. 항상 지킬 규칙만 남았는지, “확인 필요” 규칙과 금지 항목이 있는지 확인한 뒤 실제로 저장합니다. 기준·양식 관리  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">기준-02</span></div>
+    <h3>프로젝트 지침 보강하기 (메타 프롬프트)</h3>
+    <p class="when">지침이 잘 지켜지지 않을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-52" data-open="false"><pre id="pr-52">아래는 내 프로젝트 지침이야.
+<mark class="ph">[지침 붙여넣기]</mark>
+
+내 업무는 <mark class="ph">[업무 설명]</mark>이야.
+이 지침에서
+1) 빠져 있는 항목
+2) 너무 넓어서 지켜지기 어려운 항목
+을 짚어 주고,
+보완 문구만 따로 제시해줘.
+전체를 다시 쓰지는 마.</pre></div>
+    <p class="check" id="ck-52" hidden><span class="k">검수</span>항상 지킬 규칙만 남았는지, “확인 필요” 규칙과 금지 항목이 있는지 확인한 뒤 실제로 저장합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="52" aria-expanded="false" aria-controls="pw-52 ck-52">펼치기 <span class="lines">115자</span></button>
+      <button type="button" class="copy" data-i="52" aria-label="프로젝트 지침 보강하기 (메타 프롬프트) 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="기준-03" data-track="work" data-cat="std" data-sens="ok" data-new="0" data-cf="0" data-tools="스킬" data-q="기준-03 스킬 설명(description) 다듬기 스킬이 불려야 할 때 안 불리거나, 엉뚱할 때 불릴 때 아래는 내 스킬의 description이야.
+[description 붙여넣기]
+
+이 스킬이 불려야 하는 요청 [정상 요청 예]와
+불리면 안 되는 비슷한 요청 [인접 요청 예]를 구분할 수 있게
+무슨 일 · 언제 · 어떤 말이 나오면 · 쓰지 않는 경우를 넣어
+설명을 한 문단으로 고쳐줘. 본문은 바꾸지 마. 고친 뒤 새 대화에서 정상·인접 문장으로 다시 시험합니다. 기준·양식 관리  스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">기준-03</span></div>
+    <h3>스킬 설명(description) 다듬기</h3>
+    <p class="when">스킬이 불려야 할 때 안 불리거나, 엉뚱할 때 불릴 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-53" data-open="false"><pre id="pr-53">아래는 내 스킬의 description이야.
+<mark class="ph">[description 붙여넣기]</mark>
+
+이 스킬이 불려야 하는 요청 <mark class="ph">[정상 요청 예]</mark>와
+불리면 안 되는 비슷한 요청 <mark class="ph">[인접 요청 예]</mark>를 구분할 수 있게
+무슨 일 · 언제 · 어떤 말이 나오면 · 쓰지 않는 경우를 넣어
+설명을 한 문단으로 고쳐줘. 본문은 바꾸지 마.</pre></div>
+    <p class="check" id="ck-53" hidden><span class="k">검수</span>고친 뒤 새 대화에서 정상·인접 문장으로 다시 시험합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="53" aria-expanded="false" aria-controls="pw-53 ck-53">펼치기 <span class="lines">165자</span></button>
+      <button type="button" class="copy" data-i="53" aria-label="스킬 설명(description) 다듬기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="기준-04" data-track="work" data-cat="std" data-sens="ok" data-new="0" data-cf="0" data-tools="스킬" data-q="기준-04 결과 형식이 같은지 비교하기 스킬 결과가 매번 같은 양식인지 확인할 때 아래 두 검토서의 형식만 비교해줘. 내용은 평가하지 마.
+[구분 | 검토서 1 | 검토서 2 | 같음/다름] 표로
+부분 구성, 표의 열 이름, 검토 항목 순서를 비교해줘.
+
+[검토서 1 붙여넣기]
+[검토서 2 붙여넣기] 다르면 스킬 본문의 출력 규칙을 더 구체적으로 고칩니다. 기준·양식 관리  스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">기준-04</span></div>
+    <h3>결과 형식이 같은지 비교하기</h3>
+    <p class="when">스킬 결과가 매번 같은 양식인지 확인할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-54" data-open="false"><pre id="pr-54">아래 두 검토서의 형식만 비교해줘. 내용은 평가하지 마.
+[구분 | 검토서 1 | 검토서 2 | 같음/다름] 표로
+부분 구성, 표의 열 이름, 검토 항목 순서를 비교해줘.
+
+<mark class="ph">[검토서 1 붙여넣기]</mark>
+<mark class="ph">[검토서 2 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-54" hidden><span class="k">검수</span>다르면 스킬 본문의 출력 규칙을 더 구체적으로 고칩니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="54" aria-expanded="false" aria-controls="pw-54 ck-54">펼치기 <span class="lines">117자</span></button>
+      <button type="button" class="copy" data-i="54" aria-label="결과 형식이 같은지 비교하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="기준-05" data-track="work" data-cat="std" data-sens="ok" data-new="1" data-cf="0" data-tools="스킬" data-q="기준-05 스킬 시험 문장 네 가지 만들기 새 스킬을 팀에 배포하기 전 아래 스킬 description을 보고 시험 문장 네 개를 만들어줘.
+[구분 | 함께 줄 자료 | 시험 문장 | 기대 결과(호출·미호출)]
+- 정상 1·2: 이 스킬이 불려야 하는 요청
+- 인접: 자료는 비슷하지만 불리면 안 되는 요청
+- 무관: 전혀 다른 요청
+[description 붙여넣기] 네 문장은 새 대화에서 같은 모델로 시험합니다. 인접 문장에서 불리면 description을 고칩니다. 기준·양식 관리  스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">기준-05</span><span class="newb">추가 제안</span></div>
+    <h3>스킬 시험 문장 네 가지 만들기</h3>
+    <p class="when">새 스킬을 팀에 배포하기 전</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">스킬</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-55" data-open="false"><pre id="pr-55">아래 스킬 description을 보고 시험 문장 네 개를 만들어줘.
+[구분 | 함께 줄 자료 | 시험 문장 | 기대 결과(호출·미호출)]
+- 정상 1·2: 이 스킬이 불려야 하는 요청
+- 인접: 자료는 비슷하지만 불리면 안 되는 요청
+- 무관: 전혀 다른 요청
+<mark class="ph">[description 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-55" hidden><span class="k">검수</span>네 문장은 새 대화에서 같은 모델로 시험합니다. 인접 문장에서 불리면 description을 고칩니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="55" aria-expanded="false" aria-controls="pw-55 ck-55">펼치기 <span class="lines">160자</span></button>
+      <button type="button" class="copy" data-i="55" aria-label="스킬 시험 문장 네 가지 만들기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="기준-06" data-track="work" data-cat="std" data-sens="in" data-new="1" data-cf="0" data-tools="프로젝트" data-q="기준-06 프로젝트 지식 목록과 버전 정리 프로젝트에 올린 기준 자료가 여러 개일 때 이 프로젝트 지식에 올라간 파일을 목록으로 정리해줘.
+[파일명 | 문서 종류 | 문서 번호·날짜(본문 기준) | 이 프로젝트에서 쓰는 곳 | 최신 여부 확인 필요]
+같은 문서의 여러 버전이 있으면 표시하고, 지울 후보를 제안만 해줘. 직접 판단해 지우라고 하지 마. 옛 버전과 새 버전을 함께 두면 섞여서 답할 수 있습니다. 최신본 확인은 사람이 합니다. 기준·양식 관리  프로젝트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">기준-06</span><span class="newb">추가 제안</span></div>
+    <h3>프로젝트 지식 목록과 버전 정리</h3>
+    <p class="when">프로젝트에 올린 기준 자료가 여러 개일 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-56" data-open="false"><pre id="pr-56">이 프로젝트 지식에 올라간 파일을 목록으로 정리해줘.
+[파일명 | 문서 종류 | 문서 번호·날짜(본문 기준) | 이 프로젝트에서 쓰는 곳 | 최신 여부 확인 필요]
+같은 문서의 여러 버전이 있으면 표시하고, 지울 후보를 제안만 해줘. 직접 판단해 지우라고 하지 마.</pre></div>
+    <p class="check" id="ck-56" hidden><span class="k">검수</span>옛 버전과 새 버전을 함께 두면 섞여서 답할 수 있습니다. 최신본 확인은 사람이 합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="56" aria-expanded="false" aria-controls="pw-56 ck-56">펼치기 <span class="lines">146자</span></button>
+      <button type="button" class="copy" data-i="56" aria-label="프로젝트 지식 목록과 버전 정리 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="기준-07" data-track="work" data-cat="std" data-sens="ok" data-new="1" data-cf="0" data-tools="프로젝트|스킬" data-q="기준-07 지침 변경 이력 남기기 프로젝트 지침이나 스킬을 고칠 때마다 아래 수정 전·후 지침을 비교해 변경 이력을 남겨줘.
+[날짜 | 바뀐 칸(역할·기준·판정·양식·수치·금지) | 수정 전 | 수정 후 | 바꾼 이유(내가 적은 것)]
+바꾼 이유는 내가 적은 내용만 쓰고, 없으면 ‘사유 미기재’로 둬.
+[수정 전 지침] [수정 후 지침] [바꾼 이유] 이력은 팀 공유 폴더에 함께 보관해 누가 언제 기준을 바꿨는지 알 수 있게 합니다. 기준·양식 관리  프로젝트 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">기준-07</span><span class="newb">추가 제안</span></div>
+    <h3>지침 변경 이력 남기기</h3>
+    <p class="when">프로젝트 지침이나 스킬을 고칠 때마다</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">프로젝트</span><span class="tool">스킬</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-57" data-open="false"><pre id="pr-57">아래 수정 전·후 지침을 비교해 변경 이력을 남겨줘.
+[날짜 | 바뀐 칸(역할·기준·판정·양식·수치·금지) | 수정 전 | 수정 후 | 바꾼 이유(내가 적은 것)]
+바꾼 이유는 내가 적은 내용만 쓰고, 없으면 ‘사유 미기재’로 둬.
+<mark class="ph">[수정 전 지침]</mark> <mark class="ph">[수정 후 지침]</mark> <mark class="ph">[바꾼 이유]</mark></pre></div>
+    <p class="check" id="ck-57" hidden><span class="k">검수</span>이력은 팀 공유 폴더에 함께 보관해 누가 언제 기준을 바꿨는지 알 수 있게 합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="57" aria-expanded="false" aria-controls="pw-57 ck-57">펼치기 <span class="lines">154자</span></button>
+      <button type="button" class="copy" data-i="57" aria-label="지침 변경 이력 남기기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="work" data-group="agent" aria-labelledby="h-agent">
+  <div class="ghead"><h2 id="h-agent"><span class="gk work">공통</span>코워크·클로드 코드 <span class="n">5개</span></h2></div>
+  <div class="grid"><article class="card work" id="자동-01" data-track="work" data-cat="agent" data-sens="ok" data-new="0" data-cf="1" data-tools="대화|클로드 코드" data-q="자동-01 프로젝트 지침을 claude.md 초안으로 프로젝트 규칙을 클로드 코드로 옮길 때 아래 프로젝트 지침을 클로드 코드에서 쓸 claude.md 초안으로 바꿔줘.
+제목을 붙인 마크다운으로, 역할 · 기준 자료 위치 · 판정 기준 · 결과 양식 · 금지 순서로 쓰고,
+원본 파일은 수정하지 않는다는 규칙을 금지에 넣어줘.
+
+[프로젝트 지침 붙여넣기] 파일 경로 같은 내용은 실제 폴더 구조에 맞게 사람이 고칩니다. 사내 개발 과정의 규칙이 있으면 그것을 따릅니다. 코워크·클로드 코드 02_검토프로젝트_지침.txt 대화 클로드 코드">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">자동-01</span></div>
+    <h3>프로젝트 지침을 CLAUDE.md 초안으로</h3>
+    <p class="when">프로젝트 규칙을 클로드 코드로 옮길 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span><span class="tool">클로드 코드</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div><p class="cfile"><span class="cfb">고객사 파일로 연습</span>02_검토프로젝트_지침.txt</p>
+    <div class="prompt" id="pw-58" data-open="false"><pre id="pr-58">아래 프로젝트 지침을 클로드 코드에서 쓸 CLAUDE.md 초안으로 바꿔줘.
+제목을 붙인 마크다운으로, 역할 · 기준 자료 위치 · 판정 기준 · 결과 양식 · 금지 순서로 쓰고,
+원본 파일은 수정하지 않는다는 규칙을 금지에 넣어줘.
+
+<mark class="ph">[프로젝트 지침 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-58" hidden><span class="k">검수</span>파일 경로 같은 내용은 실제 폴더 구조에 맞게 사람이 고칩니다. 사내 개발 과정의 규칙이 있으면 그것을 따릅니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="58" aria-expanded="false" aria-controls="pw-58 ck-58">펼치기 <span class="lines">142자</span></button>
+      <button type="button" class="copy" data-i="58" aria-label="프로젝트 지침을 CLAUDE.md 초안으로 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="자동-02" data-track="work" data-cat="agent" data-sens="in" data-new="1" data-cf="0" data-tools="코워크|스킬" data-q="자동-02 코워크로 폴더 견적서 한 번에 검토하기 견적서 여러 건이 한 폴더에 모였을 때 연결한 폴더의 견적서를 하나씩 quote-review 스킬로 검토해줘.
+실행 전에 계획(읽을 파일 목록 · 만들 결과 파일 이름 · 저장 위치)을 먼저 보여주고 내 승인을 기다려.
+원본 파일은 수정·이동·삭제하지 말고, 결과는 [결과 폴더]에 업체별 검토서로 저장해줘. 코워크는 유료 기능입니다. 계획 단계에서 원본을 건드리는 작업이 없는지 읽고 승인합니다. 코워크·클로드 코드  코워크 스킬">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">자동-02</span><span class="newb">추가 제안</span></div>
+    <h3>코워크로 폴더 견적서 한 번에 검토하기</h3>
+    <p class="when">견적서 여러 건이 한 폴더에 모였을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">코워크</span><span class="tool">스킬</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-59" data-open="false"><pre id="pr-59">연결한 폴더의 견적서를 하나씩 quote-review 스킬로 검토해줘.
+실행 전에 계획(읽을 파일 목록 · 만들 결과 파일 이름 · 저장 위치)을 먼저 보여주고 내 승인을 기다려.
+원본 파일은 수정·이동·삭제하지 말고, 결과는 <mark class="ph">[결과 폴더]</mark>에 업체별 검토서로 저장해줘.</pre></div>
+    <p class="check" id="ck-59" hidden><span class="k">검수</span>코워크는 유료 기능입니다. 계획 단계에서 원본을 건드리는 작업이 없는지 읽고 승인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="59" aria-expanded="false" aria-controls="pw-59 ck-59">펼치기 <span class="lines">148자</span></button>
+      <button type="button" class="copy" data-i="59" aria-label="코워크로 폴더 견적서 한 번에 검토하기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="자동-03" data-track="work" data-cat="agent" data-sens="in" data-new="1" data-cf="0" data-tools="코워크" data-q="자동-03 폴더 파일 이름 정리 계획 받기 공유 폴더에 이름 규칙이 제각각인 파일이 쌓였을 때 연결한 폴더의 파일 이름을 [규칙: 예) 날짜_문서종류_업체_버전]으로 바꾸려고 해.
+지금은 바꾸지 말고, [현재 이름 | 바꿀 이름 | 근거(본문에서 확인한 날짜·문서 종류)] 표로 계획만 보여줘.
+본문에서 날짜를 확인할 수 없는 파일은 ‘확인 필요’로 두고 이름을 짓지 마. 계획을 사람이 확인한 뒤에만 실행하게 합니다. 삭제는 요청하지 않습니다. 코워크·클로드 코드  코워크">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">자동-03</span><span class="newb">추가 제안</span></div>
+    <h3>폴더 파일 이름 정리 계획 받기</h3>
+    <p class="when">공유 폴더에 이름 규칙이 제각각인 파일이 쌓였을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">코워크</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-60" data-open="false"><pre id="pr-60">연결한 폴더의 파일 이름을 <mark class="ph">[규칙: 예) 날짜_문서종류_업체_버전]</mark>으로 바꾸려고 해.
+지금은 바꾸지 말고, [현재 이름 | 바꿀 이름 | 근거(본문에서 확인한 날짜·문서 종류)] 표로 계획만 보여줘.
+본문에서 날짜를 확인할 수 없는 파일은 ‘확인 필요’로 두고 이름을 짓지 마.</pre></div>
+    <p class="check" id="ck-60" hidden><span class="k">검수</span>계획을 사람이 확인한 뒤에만 실행하게 합니다. 삭제는 요청하지 않습니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="60" aria-expanded="false" aria-controls="pw-60 ck-60">펼치기 <span class="lines">153자</span></button>
+      <button type="button" class="copy" data-i="60" aria-label="폴더 파일 이름 정리 계획 받기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="자동-04" data-track="work" data-cat="agent" data-sens="in" data-new="1" data-cf="0" data-tools="클로드 코드" data-q="자동-04 클로드 코드에 plan 모드로 계획 먼저 받기 폴더 작업을 클로드 코드에 맡길 때 [하려는 작업: 예) 견적서 폴더의 엑셀에서 업체·품목·금액만 뽑아 하나의 표로 모으기]
+바로 실행하지 말고 계획만 보여줘.
+1) 읽을 파일 2) 만들 파일과 위치 3) 원본을 수정하는지 여부 4) 내가 확인할 점
+claude.md의 금지 규칙을 지키고, 원본 파일은 바꾸지 마. 클로드 코드는 유료입니다. 계획과 변경 내용(diff)을 사람이 읽고 승인한 뒤 진행합니다. 코워크·클로드 코드  클로드 코드">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">자동-04</span><span class="newb">추가 제안</span></div>
+    <h3>클로드 코드에 Plan 모드로 계획 먼저 받기</h3>
+    <p class="when">폴더 작업을 클로드 코드에 맡길 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">클로드 코드</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-61" data-open="false"><pre id="pr-61"><mark class="ph">[하려는 작업: 예) 견적서 폴더의 엑셀에서 업체·품목·금액만 뽑아 하나의 표로 모으기]</mark>
+바로 실행하지 말고 계획만 보여줘.
+1) 읽을 파일 2) 만들 파일과 위치 3) 원본을 수정하는지 여부 4) 내가 확인할 점
+CLAUDE.md의 금지 규칙을 지키고, 원본 파일은 바꾸지 마.</pre></div>
+    <p class="check" id="ck-61" hidden><span class="k">검수</span>클로드 코드는 유료입니다. 계획과 변경 내용(diff)을 사람이 읽고 승인한 뒤 진행합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="61" aria-expanded="false" aria-controls="pw-61 ck-61">펼치기 <span class="lines">153자</span></button>
+      <button type="button" class="copy" data-i="61" aria-label="클로드 코드에 Plan 모드로 계획 먼저 받기 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="자동-05" data-track="work" data-cat="agent" data-sens="in" data-new="1" data-cf="0" data-tools="클로드 코드" data-q="자동-05 월별 집계 스크립트 요청 매달 같은 엑셀 집계를 손으로 반복할 때 [폴더] 안의 월별 엑셀 파일에서 [시트·열 이름]을 읽어 [집계 기준]으로 합친 표를 만드는 스크립트를 짜줘.
+원본 파일은 읽기만 하고, 결과는 새 파일 [결과 파일명]으로 저장해줘.
+처음에는 파일 두 개로만 시험하고, 결과 합계를 손으로 검산할 수 있게 중간 표도 같이 보여줘. 사내 개발 과정의 규칙(저장소·검토 절차)이 있으면 그것을 따릅니다. 결과 합계는 원본으로 검산합니다. 코워크·클로드 코드  클로드 코드">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">자동-05</span><span class="newb">추가 제안</span></div>
+    <h3>월별 집계 스크립트 요청</h3>
+    <p class="when">매달 같은 엑셀 집계를 손으로 반복할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">클로드 코드</span></div>
+    <div class="meta2"><span class="sens in">내부 자료 · 허용 환경에서</span></div>
+    <div class="prompt" id="pw-62" data-open="false"><pre id="pr-62"><mark class="ph">[폴더]</mark> 안의 월별 엑셀 파일에서 <mark class="ph">[시트·열 이름]</mark>을 읽어 <mark class="ph">[집계 기준]</mark>으로 합친 표를 만드는 스크립트를 짜줘.
+원본 파일은 읽기만 하고, 결과는 새 파일 <mark class="ph">[결과 파일명]</mark>으로 저장해줘.
+처음에는 파일 두 개로만 시험하고, 결과 합계를 손으로 검산할 수 있게 중간 표도 같이 보여줘.</pre></div>
+    <p class="check" id="ck-62" hidden><span class="k">검수</span>사내 개발 과정의 규칙(저장소·검토 절차)이 있으면 그것을 따릅니다. 결과 합계는 원본으로 검산합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="62" aria-expanded="false" aria-controls="pw-62 ck-62">펼치기 <span class="lines">155자</span></button>
+      <button type="button" class="copy" data-i="62" aria-label="월별 집계 스크립트 요청 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+<section class="group" data-track="work" data-group="ax" aria-labelledby="h-ax">
+  <div class="ghead"><h2 id="h-ax"><span class="gk work">공통</span>AX 전파 <span class="n">5개</span></h2></div>
+  <div class="grid"><article class="card work" id="AX-01" data-track="work" data-cat="ax" data-sens="ok" data-new="1" data-cf="0" data-tools="대화" data-q="ax-01 팀 전파용 10분 안내문 교육 후 팀원에게 claude 활용법을 전할 때 오늘 claude 교육에서 배운 것을 우리 팀원에게 10분 동안 전하려고 해.
+아래 메모로 ‘오늘 배운 것 3가지 / 우리 팀 업무에 바로 쓸 예시 2개 / 따라 해볼 프롬프트 1개 / 주의사항(민감정보·원문 대조)’ 구성의 안내문을 써줘.
+메모에 없는 기능·효과는 만들지 말고 ‘확인 필요’로 남겨줘.
+[교육 메모와 팀 업무 붙여넣기] 기능 이름과 유료·무료 여부는 실제 계정 화면으로 확인한 뒤 공유합니다. ax 전파  대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">AX-01</span><span class="newb">추가 제안</span></div>
+    <h3>팀 전파용 10분 안내문</h3>
+    <p class="when">교육 후 팀원에게 Claude 활용법을 전할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-63" data-open="false"><pre id="pr-63">오늘 Claude 교육에서 배운 것을 우리 팀원에게 10분 동안 전하려고 해.
+아래 메모로 ‘오늘 배운 것 3가지 / 우리 팀 업무에 바로 쓸 예시 2개 / 따라 해볼 프롬프트 1개 / 주의사항(민감정보·원문 대조)’ 구성의 안내문을 써줘.
+메모에 없는 기능·효과는 만들지 말고 ‘확인 필요’로 남겨줘.
+<mark class="ph">[교육 메모와 팀 업무 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-63" hidden><span class="k">검수</span>기능 이름과 유료·무료 여부는 실제 계정 화면으로 확인한 뒤 공유합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="63" aria-expanded="false" aria-controls="pw-63 ck-63">펼치기 <span class="lines">185자</span></button>
+      <button type="button" class="copy" data-i="63" aria-label="팀 전파용 10분 안내문 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="AX-02" data-track="work" data-cat="ax" data-sens="ok" data-new="1" data-cf="0" data-tools="대화|아티팩트" data-q="ax-02 팀 claude 사용 가이드 초안 팀에서 ai 사용 기준을 정할 때 우리 팀의 claude 사용 가이드 초안을 1쪽으로 써줘. 팀 업무: [업무 설명]
+구성: 쓸 수 있는 업무 / 넣으면 안 되는 자료(고객·계약·인사·원가·개인정보) / 프로젝트·스킬 만들 때 규칙 / 결과 검수 규칙 / 문의처([부서명])
+회사 기준으로 정해지지 않은 항목은 만들지 말고 ‘회사 기준 확인 필요’로 남겨줘. 가이드는 회사 보안·정보보호 담당 부서 검토를 거쳐 확정합니다. ax 전파  대화 아티팩트">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">AX-02</span><span class="newb">추가 제안</span></div>
+    <h3>팀 Claude 사용 가이드 초안</h3>
+    <p class="when">팀에서 AI 사용 기준을 정할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span><span class="tool">아티팩트</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-64" data-open="false"><pre id="pr-64">우리 팀의 Claude 사용 가이드 초안을 1쪽으로 써줘. 팀 업무: <mark class="ph">[업무 설명]</mark>
+구성: 쓸 수 있는 업무 / 넣으면 안 되는 자료(고객·계약·인사·원가·개인정보) / 프로젝트·스킬 만들 때 규칙 / 결과 검수 규칙 / 문의처(<mark class="ph">[부서명]</mark>)
+회사 기준으로 정해지지 않은 항목은 만들지 말고 ‘회사 기준 확인 필요’로 남겨줘.</pre></div>
+    <p class="check" id="ck-64" hidden><span class="k">검수</span>가이드는 회사 보안·정보보호 담당 부서 검토를 거쳐 확정합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="64" aria-expanded="false" aria-controls="pw-64 ck-64">펼치기 <span class="lines">179자</span></button>
+      <button type="button" class="copy" data-i="64" aria-label="팀 Claude 사용 가이드 초안 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="AX-03" data-track="work" data-cat="ax" data-sens="ok" data-new="1" data-cf="0" data-tools="대화" data-q="ax-03 gemini와 claude 결과 비교 같은 자료로 두 도구 결과가 다를 때 같은 자료로 gemini와 claude가 만든 결과 a와 b를 비교해줘.
+[항목 | a 내용 | b 내용 | 원문 근거 | 원문과 맞는 쪽(근거가 있을 때만)]
+원문에 근거가 없는 차이는 ‘원문 확인 필요’로 남기고, 무조건 한쪽을 고르지 마.
+[원문 자료] [결과 a] [결과 b] 최종 판단은 원문을 직접 읽고 사람이 합니다. ax 전파  대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">AX-03</span><span class="newb">추가 제안</span></div>
+    <h3>Gemini와 Claude 결과 비교</h3>
+    <p class="when">같은 자료로 두 도구 결과가 다를 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-65" data-open="false"><pre id="pr-65">같은 자료로 Gemini와 Claude가 만든 결과 A와 B를 비교해줘.
+[항목 | A 내용 | B 내용 | 원문 근거 | 원문과 맞는 쪽(근거가 있을 때만)]
+원문에 근거가 없는 차이는 ‘원문 확인 필요’로 남기고, 무조건 한쪽을 고르지 마.
+<mark class="ph">[원문 자료]</mark> <mark class="ph">[결과 A]</mark> <mark class="ph">[결과 B]</mark></pre></div>
+    <p class="check" id="ck-65" hidden><span class="k">검수</span>최종 판단은 원문을 직접 읽고 사람이 합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="65" aria-expanded="false" aria-controls="pw-65 ck-65">펼치기 <span class="lines">155자</span></button>
+      <button type="button" class="copy" data-i="65" aria-label="Gemini와 Claude 결과 비교 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="AX-04" data-track="work" data-cat="ax" data-sens="ok" data-new="1" data-cf="0" data-tools="대화" data-q="ax-04 월간 ai 활용 사례 수집 정리 ax 담당자로 팀 활용 사례를 모을 때 아래 팀원들이 보낸 ai 활용 메모를 월간 사례 보고로 정리해줘.
+[업무 | 사용 기능(프로젝트·스킬·아티팩트 등) | 한 일 | 결과물 | 줄어든 시간(메모에 적힌 경우만) | 주의점 | 다른 팀 적용 가능성]
+메모에 없는 시간·수치는 비워 두고, 마지막에 다음 달 스킬로 만들어 볼 업무 3개를 제안해줘.
+[활용 메모 붙여넣기] 사례 공유 전, 메모에 고객·내부 정보가 들어 있지 않은지 확인합니다. ax 전파  대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">AX-04</span><span class="newb">추가 제안</span></div>
+    <h3>월간 AI 활용 사례 수집 정리</h3>
+    <p class="when">AX 담당자로 팀 활용 사례를 모을 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-66" data-open="false"><pre id="pr-66">아래 팀원들이 보낸 AI 활용 메모를 월간 사례 보고로 정리해줘.
+[업무 | 사용 기능(프로젝트·스킬·아티팩트 등) | 한 일 | 결과물 | 줄어든 시간(메모에 적힌 경우만) | 주의점 | 다른 팀 적용 가능성]
+메모에 없는 시간·수치는 비워 두고, 마지막에 다음 달 스킬로 만들어 볼 업무 3개를 제안해줘.
+<mark class="ph">[활용 메모 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-66" hidden><span class="k">검수</span>사례 공유 전, 메모에 고객·내부 정보가 들어 있지 않은지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="66" aria-expanded="false" aria-controls="pw-66 ck-66">펼치기 <span class="lines">182자</span></button>
+      <button type="button" class="copy" data-i="66" aria-label="월간 AI 활용 사례 수집 정리 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article><article class="card work" id="AX-05" data-track="work" data-cat="ax" data-sens="ok" data-new="1" data-cf="0" data-tools="대화" data-q="ax-05 팀 공유 프롬프트 표준 양식 팀원이 쓴 프롬프트를 모아 함께 쓰려 할 때 아래 팀원들이 쓴 프롬프트를 팀 공유용 표준 양식으로 정리해줘.
+양식: 제목 / 언제 쓰나 / 어디서(프로젝트·스킬·일반 대화) / 넣을 자료 / 프롬프트 본문(바꿀 곳은 [대괄호]) / 검수 포인트 / 자료 주의
+뜻이 같은 프롬프트는 하나로 합치고, 원래 의도는 바꾸지 마.
+[팀원 프롬프트 붙여넣기] 합친 프롬프트로 같은 자료를 다시 돌려 결과가 같은지 확인합니다. ax 전파  대화">
+  <header class="card-h">
+    <div class="card-top"><span class="rib work">교육 후 · 업무 복귀</span><span class="tagid">AX-05</span><span class="newb">추가 제안</span></div>
+    <h3>팀 공유 프롬프트 표준 양식</h3>
+    <p class="when">팀원이 쓴 프롬프트를 모아 함께 쓰려 할 때</p>
+  </header>
+  <div class="card-b">
+    <div class="meta"><span class="tool">대화</span></div>
+    <div class="meta2"><span class="sens ok">공개·실습 자료로 가능</span></div>
+    <div class="prompt" id="pw-67" data-open="false"><pre id="pr-67">아래 팀원들이 쓴 프롬프트를 팀 공유용 표준 양식으로 정리해줘.
+양식: 제목 / 언제 쓰나 / 어디서(프로젝트·스킬·일반 대화) / 넣을 자료 / 프롬프트 본문(바꿀 곳은 <mark class="ph">[대괄호]</mark>) / 검수 포인트 / 자료 주의
+뜻이 같은 프롬프트는 하나로 합치고, 원래 의도는 바꾸지 마.
+<mark class="ph">[팀원 프롬프트 붙여넣기]</mark></pre></div>
+    <p class="check" id="ck-67" hidden><span class="k">검수</span>합친 프롬프트로 같은 자료를 다시 돌려 결과가 같은지 확인합니다.</p>
+    <div class="actions">
+      <button type="button" class="more" data-i="67" aria-expanded="false" aria-controls="pw-67 ck-67">펼치기 <span class="lines">166자</span></button>
+      <button type="button" class="copy" data-i="67" aria-label="팀 공유 프롬프트 표준 양식 프롬프트 복사">복사</button>
+    </div>
+  </div>
+</article></div>
+</section>
+      <p class="empty" id="empty" hidden>조건에 맞는 프롬프트가 없습니다. 검색어를 줄이거나 ‘조건 모두 지우기’를 눌러 주세요.</p>
+    </main>
+  </div>
+  <footer class="foot">
+    <span>근거 자료: 부강테크 클로드 교안 최종본(154쪽), 고객사 제공 실습 자료(발주처 공사시방서·당사 기술제안서·업체 견적서 3건, 모두 가상). 발주처·업체·금액은 실제와 무관합니다.</span>
+    <span>코워크와 클로드 코드는 유료 기능입니다. 기능 이름과 화면은 계정·시점에 따라 다를 수 있으니 실제 화면으로 확인하세요.</span>
+  </footer>
+</div>
+<script>
+(function () {
+  var RAW = ["[주제]에 대해 최근 바뀐 내용을 찾아\n3줄로 정리해줘.\n각 줄마다 어느 자료에서 나온 내용인지\n출처를 함께 표시해줘.\n검색으로 확인되지 않은 내용은 넣지 말고,\n확실하지 않으면 \"확인 필요\"라고 써줘.", "이번 주 영업팀 실적 보고서를 문서로 만들어줘.\n[거래처 / 영업 활동 / 계약 금액(만원) / 진행 상태] 4열 표로 정리해 줘\n표 아래에 거래처별 계약 금액을 막대차트로 시각화해줘.\n- 내가 적지 않은 값은 임의로 채우지 말고 \"확인 필요\"로 표시해줘.\n- 계약 금액이 \"확인 필요\"인 거래처는 차트에서 제외하고, 표에만 표시해줘.\n- 금액은 만원 단위 숫자로 통일해서 넣어줘.\n[내용]\n- A사, 신규 제안, 5000, 회신 대기\n- B사, 계약 갱신, 12000, 완료\n- C사, 견적 문의\n- D사, 클레임 대응, 처리중", "[역할] 사무 업무를 돕는 도우미.\n[말투] 한국어 존댓말. 쉬운 표현.\n[형식] 표를 만들 때는 근거 열을 포함한다.\n\n[금지]\n- 내가 주지 않은 값을 지어내지 않는다\n- 확실하지 않으면 \"확인 필요\"로 표시한다\n- 실제 회사명·고객명·금액은 다루지 않는다\n\n[수치] 숫자와 날짜는 원문 그대로 옮기고,\n계산했으면 계산식을 함께 보여준다.", "2026년에 개정된 '중소기업 사무자동화 지원법' 제12조의 AI 도입 지원금 신청 요건을 정리해줘.", "지금 네가 참고할 수 있는 정보를\n아래 네 가지로 나눠서 알려줘.\n\n1) 프로젝트 지침에 적힌 규칙\n2) 프로젝트에 올라온 자료\n3) 이 대화에서 지금까지 나온 내용\n4) 방금 내가 보낸 메시지\n\n각 항목에 실제로 무엇이 들어 있는지 적고,\n비어 있으면 \"없음\"이라고 써줘.\n\n네가 볼 수 없는 것도 함께 알려줘.", "판정은 몇 가지로 하지? 표는 어떤 열로 만들지?", "[역할] 입찰 기술검토를 돕는 보조자.\n[기준] 프로젝트 지식의 발주처 공사시방서.\n판단마다 시방서 조항 번호를 적는다.\n[판정] 충족 / 미흡 / 누락 / 확인 필요 네 가지만 쓴다.\n- 충족: 기준을 만족하는 내용이 있다\n- 미흡: 내용은 있으나 기준에 못 미친다\n- 누락: 기준 항목이 문서에 없다\n- 확인 필요: 문서만으로 판단할 수 없다\n[양식] 검토 결과는 아래 열의 표로 만든다.\n번호 | 검토 항목 | 시방서 기준 | 근거 조항 |\n검토 대상 내용 | 판정 | 조치 의견\n여러 문서를 비교할 때는 항목을 행, 문서를 열로 두고\n마지막 열에 시방서 기준과 근거 조항을 넣는다.\n[수치] 숫자·단위는 원문 그대로 옮기고,\n계산했으면 계산식을 함께 보여준다.\n[금지]\n- 문서에 없는 값을 지어내지 않는다\n- 애매하면 '충족'이 아니라 '확인 필요'로 둔다\n- 채택·탈락 같은 최종 결론은 내리지 않는다\n- 배포된 실습 자료 외의 사내 자료는 다루지 않는다", "아래 회의록에서 '결정된 것'과 '할 일'을 나눠서 정리해줘.\n할 일은 [내용 / 담당 / 기한] 3열 표로 만들고,\n담당이나 기한이 적혀 있지 않으면 \"확인 필요\"라고 써줘.\n\n[회의록 붙여넣기]", "아래 자료를 팀장 보고용으로 3줄로 요약해줘.\n숫자와 날짜는 원문 그대로 쓰고,\n자료에 없는 내용은 넣지 마.\n\n[자료 붙여넣기]", "거래처에 납기 지연을 알리는 메일을 써줘.\n사과 → 지연 사유 → 변경된 일정 → 요청사항 순서로,\n5문장 이내, 정중한 존댓말로 써줘.\n\n[지연 사유와 변경 일정]", "프로젝트 지식의 공사시방서에서\n소화조 교반기(3.16)에 적용되는 요구사항을 뽑아줘.\n제1장·제2장 중 교반기에 적용되는 조항도 포함해줘.\n\n[번호 | 구분 | 요구사항 | 기준값 | 근거 조항] 표로 정리하고,\n구분은 성능 / 사양 / 시험·검사 / 납품·공정 /\n서류·인증 / 보증 중에서 고른다.\n\n수치는 원문 단위 그대로 옮기고,\n해석이 필요한 조항은 '확인 필요'로 표시해줘.\n표는 별도 창으로 만들어줘.", "첨부한 기술제안서(4.3 소화조 교반설비)가\n방금 정리한 시방서 요구사항을 반영했는지 검토해줘.\n\n프로젝트 지침의 양식과 판정 기준을 그대로 쓰고,\n'미흡'과 '누락' 항목을 표 위쪽에 먼저 모아줘.\n\n제안서 안에서 서로 맞지 않는 내용이 있으면\n표 아래에 따로 적어줘.", "미흡·누락 항목만 골라\n[항목 | 제안서 현재 내용 | 수정 방향 | 확인할 부서]\n표로 정리해줘. 새 수치를 만들지 말고,\n설계가 바뀌어야 하면 '설계 재검토 필요'로 적어줘.", "3.16 전체를 다시 확인해줘.", "나는 [팀 이름]의 AX 담당자야.\n\n지금 바로 답을 만들지 말고,\n우리 팀이 반복하는 분석·검토 업무 중에서\n기준과 양식을 정해 두면 같은 형식으로\n반복할 수 있는 업무를 고를 수 있도록\n질문을 5개만 해줘.\n\n질문은 번호를 붙여 한 번에 보여주고,\n내가 답하기 전에는 다음 단계로 넘어가지 마.", "내 답변을 바탕으로 후보 3개만 골라줘.\n① 기준 자료 ② 결과 양식(열 이름) ③ 위험\n④ 사람 확인 지점을 표로 정리해줘.", "첨부한 업체 견적서 3건을 시방서 기준으로 비교해줘.\n\n비교 항목은 아래 순서로 고정해줘.\n견적금액(VAT 별도) / 포함·제외 범위 / 교반동력(W/m³) /\n방폭 / 감속기 / 접액부 재질·축 밀봉 / CFD 해석 /\n공장검사(3차원 유속계) / 예비품 / 하자담보 /\n납기 / 국내 실적\n\n칸마다 견적 내용과 판정을 함께 적고,\n'별도 견적'과 '제외사항'까지 읽어줘.\n표는 별도 창으로 만들어줘.", "견적금액만으로 세 업체를 비교할 수 없는 이유를\n3줄로 정리하고, 견적서에 적힌 별도 견적·추가 금액만 더해\n업체별 '제시 금액 반영 합계'를 계산식과 함께 보여줘.\n금액이 적혀 있지 않은 항목은 '금액 미제시'로,\n금액을 더해도 남는 미충족 항목은 따로 적어줘.", "위 비교표를 엑셀 파일로 만들어줘.\n첫 시트는 비교표,\n둘째 시트는 '확인 필요' 항목만 모은\n[업체 | 항목 | 업체에 물어볼 내용] 질의 목록으로 해줘.", "연결한 폴더의 견적서 3건을\n같은 폴더의 시방서 기준으로 비교해서\n비교표 엑셀 파일을 '결과' 폴더에 만들어줘.\n계획만 먼저 제시하고 승인을 기다려줘.\n원본 파일은 수정하지 마.", "A사 견적서 검토해줘.", "---\nname: quote-review\ndescription: 업체 견적서 1건을 발주처 시방서 기준으로 검토해 정해진 양식의 견적 검토서로 정리할 때 사용. 견적서, 견적 검토, 업체 견적, 시방 대비, 견적 조건, 별도 견적, 제외사항이 나오면 사용. 기술제안서·설계서의 시방 반영 검토나 여러 업체를 한 표로 비교할 때는 쓰지 않는다.\n---\n\n# 견적 검토서 작성\n\n## 입력\n- 업체 견적서 1건 (xlsx · pdf · docx 또는 붙여 넣은 글)\n- 기준: 발주처 공사시방서 (대화에 첨부되었거나 프로젝트 지식에 있는 것)\n- 시방서가 없으면 검토를 시작하지 말고 시방서를 요청한다.\n\n## 절차\n1. 견적서의 모든 시트·쪽을 읽는다. 내역, Data Sheet, Deviation, 제외사항, 별도 견적까지 포함한다.\n2. 시방서에서 아래 검토 항목의 기준값과 조항 번호를 찾는다.\n3. 항목마다 견적 내용을 원문 그대로 옮기고 판정을 붙인다. 판정은 충족 / 미흡 / 누락 / 확인 필요 중 하나다.\n4. 견적서에 적힌 별도 견적·추가 금액만 더해 '제시 금액 반영 합계'를 계산한다. 계산식을 붙인다.\n5. 업체에 물어볼 질의를 정리한다.\n\n## 검토 항목 (순서 고정)\n1. 견적금액·VAT\n2. 포함·제외 범위\n3. 교반동력 (W/m³, 축동력 기준)\n4. 임펠러 형식·동력계수\n5. 방폭 (전동기·현장조작반, 인증)\n6. 감속기 (원산지·인증·S.F)\n7. 접액부 재질·축 밀봉\n8. 계장·통신 (진동센서·Modbus TCP)\n9. 성능 입증 (CFD)\n10. 공장검사 (감독관 입회 · 3차원 유속계 시험)\n11. 예비품\n12. 하자담보\n13. 납기\n14. 납품 실적\n15. 지침서 언어\n\n## 출력 (아래 순서와 열 이름 그대로)\n### 1. 견적 개요\n| 항목 | 내용 | 근거 위치 |\n\n### 2. 시방 대비 검토표\n| 번호 | 검토 항목 | 시방서 기준 | 근거 조항 | 검토 대상 내용 | 판정 | 조치 의견 |\n- 행 순서는 검토 항목 순서 그대로 둔다. 업체가 바뀌어도 같은 순서다.\n- '검토 대상 내용'에는 견적서 위치(시트·쪽)를 괄호로 붙인다.\n- 표 아래에 '미흡·누락 요약'을 따로 모은다.\n\n### 3. 금액 정리\n| 구분 | 금액(원) | 계산식·근거 |\n- 견적금액 / 별도 견적·추가 금액 / 제시 금액 반영 합계 / 금액 미제시 항목\n\n### 4. 업체 질의 목록\n| 번호 | 항목 | 질의 내용 |\n\n### 5. 요약\n3줄 이내. 미흡·누락 건수, 금액만으로 비교할 때 주의점.\n\n## 금지\n- 견적서에 없는 금액·사양을 추정해 채우지 않는다. 비어 있으면 '확인 필요'.\n- 애매하면 '충족'으로 처리하지 않는다.\n- 업체 채택·탈락·순위 결론을 내리지 않는다. 결정은 담당자가 한다.\n- 원본 파일을 수정하지 않는다.", "B사 견적서 검토해줘.", "C사 견적이 시방 기준에 맞는지 봐줘.", "기술제안서가 시방서를 반영했는지 확인해줘.", "다음 주 팀 회의 안내 메일 초안 써줘.", "2교시에서 고른 반복 분석 업무 후보 중 하나를\nClaude 스킬로 만들고 싶어.\n\n지금 바로 만들지 말고,\n다섯 칸을 내가 채울 수 있도록\n빈칸이 있는 표를 먼저 보여줘.\n언제 · 입력 · 절차 · 출력 · 금지\n\n내가 표를 채우기 전에는 초안을 쓰지 마.", "채운 내용으로 SKILL.md를 별도 창에 작성해줘.\n출력은 열 이름까지 정하고,\n실제 고객명·금액은 넣지 말고 자리 표시로 둬.", "연결한 폴더의 견적서를 하나씩 검토해서\n업체별 검토서를 '결과' 폴더에 만들어줘.\n기준은 같은 폴더의 시방서야.\n원본 파일은 수정하지 마.", "pwd\nls\ncd [폴더명]\ncd ..\nexit", "첨부한 [변경된 시방서]를 프로젝트 지식의 이전 시방서와 비교해줘.\n[조항 | 이전 내용 | 변경 내용 | 영향받는 검토 항목] 표로\n바뀐 조항만 정리하고, 대조표가 있으면 다시 확인할 행도 알려줘.\n표현만 바뀐 것과 기준값이 바뀐 것을 구분해줘.", "아래 발주처 질의 회신을 반영해 방금 대조표를 갱신해줘.\n판정이 바뀐 행만 [번호 | 검토 항목 | 이전 판정 | 새 판정 | 근거(회신 문장)]로 보여주고,\n회신에 없는 내용은 이전 판정을 그대로 둬.\n\n[질의 회신 붙여넣기]", "방금 대조표에서 미흡·누락 항목만 골라\n[No | 시방 조항 | 시방 요구사항 | 당사 제안 내용 | 차이 사유 | 비고]\n표로 Deviation Sheet 초안을 만들어줘.\n차이 사유는 제안서에 적힌 내용만 쓰고, 없으면 '사유 확인 필요'로 둬.", "아래 수정 전·후 제안서 문구를 비교해줘.\n[항목 | 수정 전 | 수정 후 | 시방 기준(조항) | 판정] 표로 정리하고,\n수정 후에도 기준에 못 미치면 남은 차이를 적어줘.\n\n[수정 전 문구]\n[수정 후 문구]", "프로젝트 지식의 시방서에서 해석이 두 가지 이상 가능하거나 수치·조건이 빠진 조항을 찾아 발주처 질의서 초안을 만들어줘.\n[No | 조항 | 원문 요지 | 애매한 점 | 질의 문장(예·아니오나 수치로 답할 수 있게) | 회신 요청일]\n질의 문장에 우리 측 해석이나 제안 내용은 넣지 마. 회신 요청일은 [날짜]로 비워 둬.", "첨부한 [제안요청서·평가 기준표]의 평가 항목마다 제안서 어느 장에서 답할지 정리해줘.\n[평가 항목 | 배점 | 대응 목차(장·절) | 꼭 들어갈 근거 자료 | 원문 위치]\n배점이 큰 항목부터 분량 비중을 제안하고, 평가 기준에 없는 장은 ‘평가 외’로 표시해줘.", "프로젝트 지식의 시방서와 첨부한 [계약 조건]에서 성능보증과 시험 항목만 뽑아줘.\n[항목 | 보증·기준값(단위) | 측정 조건 | 시험 방법·시점 | 미달 시 조치 | 근거 조항]\n문서마다 값이 다르면 단정하지 말고 나란히 적고, 없는 조건은 ‘확인되지 않음’으로 둬.", "방금 대조표를 별도 창(아티팩트)에 한눈 보기로 만들어줘.\n1) 판정(충족·미흡·누락·확인 필요)별 건수 막대 차트\n2) 미흡·누락 항목만 모은 표 [번호 | 검토 항목 | 판정 | 근거 조항]\n숫자는 대조표에서 세어 넣고, 대조표에 없는 항목은 만들지 마.", "첨부한 견적서들의 상업 조건만 비교해줘.\n[항목 | A사 | B사 | C사 | 시방서 기준(조항)] 표로 지급 조건, 납기(인도 조건 포함),\n하자보증 기산점과 기간, 견적 유효기간, 가격 조정 조건, 제외사항을 정리하고,\n시방서와 다른 조건은 근거 조항과 함께 표시해줘.", "방금 검토서의 업체 질의 목록으로 [업체명] 담당자에게 보낼 질의 메일 초안을 써줘.\n인사 → 질의 목적 → 번호 붙인 질의 → 회신 요청 기한([날짜]) 순서로,\n정중한 존댓말로 쓰고, 질의 목록을 뺀 본문은 5문장 이내로 해줘.\n판정·내부 금액 계산·다른 업체 정보는 쓰지 말고, 질의는 사실 확인 문장으로만 써줘.", "첨부한 견적서별 납기를 시방서의 현장 반입 기한과 비교해줘.\n[업체 | 견적 납기 | 인도 조건 | 현장 반입까지 추가 기간 | 기한 대비 | 확인할 점] 표로 정리하고,\n인도 조건 때문에 반입 시점이 불분명하면 '확인 필요'로 둬.", "첨부한 견적서들의 금액을 검산해줘.\n1) 단가×수량=금액이 맞지 않는 행\n2) 소계·부가세·합계 차이\n3) 단위가 섞인 행(식·대·set 등)과 제외 항목\n결과는 [업체 | 행 | 견적서 값 | 계산 값 | 차이] 표로 주고, 같은 검산을 할 수 있는 엑셀 수식도 적어줘.", "첨부한 [업체 사양서]를 프로젝트 지식의 시방서 요구사항과 대조해줘.\n지침의 판정 기준(충족·미흡·누락·확인 필요)과 결과 양식을 그대로 쓰고,\n사양서에 수치가 없으면 ‘확인 필요’로 두고 업체 질의 항목으로 따로 모아줘.", "아래 비교 결과와 선정 사유로 구매 품의서 초안을 써줘.\n구성: 구매 목적 / 품목·사양 / 업체 비교 요약(표) / 선정 업체와 사유 / 예산·계약 조건 / 첨부 목록\n선정 사유는 내가 적은 내용만 쓰고, 근거 없는 장점은 추가하지 마.\n[비교 결과 붙여넣기]\n[선정 사유 붙여넣기]", "아래 업체 회신 메일을 방금 검토서의 업체 질의 목록과 맞춰줘.\n[질의 번호 | 질의 내용 | 회신 요지(원문 인용) | 상태(해소·부분 해소·미회신) | 추가 확인]\n회신에 없는 질의는 ‘미회신’으로 두고, 회신 내용으로 판정을 바꿔야 하면 바꿀 행만 따로 표시해줘.\n[회신 메일 붙여넣기 — 담당자 이름·연락처는 지우고]", "방금 결과를 팀장 보고용으로 정리해줘.\n1) 3줄 요약\n2) 결정이 필요한 사항(선택지만, 추천은 하지 마)\n3) 추가 확인이 필요한 사항\n숫자와 조항은 표에 있는 그대로 쓰고, 표에 없는 내용은 넣지 마.", "이 프로젝트 지침의 보고 양식으로 이번 주 공정 보고를 써줘.\n구성: 계획 대비 실적 / 지연 항목과 원인(메모 표현 그대로) / 만회 대책(메모에 있는 것만) / 결정 요청 사항\n메모에 없는 날짜·약속은 넣지 마.\n[이번 주 메모 붙여넣기]", "아래는 개인정보를 지운 메일 스레드야(오래된 순).\n1) 쟁점 3줄\n2) [날짜 | 보낸 쪽(부서·기관) | 요청 | 상태(완료·대기·미정)] 표\n3) 내가 회신해야 할 항목\n메일에 없는 합의나 일정은 쓰지 마.\n[메일 스레드 붙여넣기]", "아래 질의 목록으로 해외 업체 담당자에게 보낼 영문 메일을 써줘.\n구성: 인사 / 목적 1문장 / 번호 붙인 질의 / 회신 요청일([날짜])\n질의는 사실 확인 문장으로만 쓰고, 우리 예산·다른 업체 정보·내부 판정은 넣지 마. 영문 아래에 국문 대역을 붙여줘.\n[질의 목록 붙여넣기]", "아래 검토 결과로 [장 수]장 발표 구조를 별도 창(아티팩트)에 만들어줘.\n[장 | 제목(결론형 한 문장) | 핵심 3줄 | 넣을 표·차트 | 근거]\n보고서에 없는 결론·추천은 넣지 말고, 결정이 필요한 사항은 선택지로만 써줘.\n[검토 결과 붙여넣기]", "아래 표로 공정 현황 한눈 보기를 별도 창(아티팩트)에 만들어줘.\n1) 항목별 계획 대비 실적 막대 차트\n2) 지연 항목만 모은 표\n3) 맨 위에 기준일 표시\n표에 없는 값은 비워 두고, 색은 정상·주의·지연 세 가지만 써줘.\n[현황 표 붙여넣기]", "아래 지침은 시방서 대조 업무용이야.\n같은 구조([역할] [기준] [판정] [양식] [수치] [금지])로\n[우리 팀 반복 분석 업무]용 지침 초안을 만들어줘.\n기준 자료와 결과 표의 열 이름은 나에게 먼저 물어보고, 답을 받은 뒤에 작성해줘.\n\n[검토 프로젝트 지침 붙여넣기]", "아래는 내 프로젝트 지침이야.\n[지침 붙여넣기]\n\n내 업무는 [업무 설명]이야.\n이 지침에서\n1) 빠져 있는 항목\n2) 너무 넓어서 지켜지기 어려운 항목\n을 짚어 주고,\n보완 문구만 따로 제시해줘.\n전체를 다시 쓰지는 마.", "아래는 내 스킬의 description이야.\n[description 붙여넣기]\n\n이 스킬이 불려야 하는 요청 [정상 요청 예]와\n불리면 안 되는 비슷한 요청 [인접 요청 예]를 구분할 수 있게\n무슨 일 · 언제 · 어떤 말이 나오면 · 쓰지 않는 경우를 넣어\n설명을 한 문단으로 고쳐줘. 본문은 바꾸지 마.", "아래 두 검토서의 형식만 비교해줘. 내용은 평가하지 마.\n[구분 | 검토서 1 | 검토서 2 | 같음/다름] 표로\n부분 구성, 표의 열 이름, 검토 항목 순서를 비교해줘.\n\n[검토서 1 붙여넣기]\n[검토서 2 붙여넣기]", "아래 스킬 description을 보고 시험 문장 네 개를 만들어줘.\n[구분 | 함께 줄 자료 | 시험 문장 | 기대 결과(호출·미호출)]\n- 정상 1·2: 이 스킬이 불려야 하는 요청\n- 인접: 자료는 비슷하지만 불리면 안 되는 요청\n- 무관: 전혀 다른 요청\n[description 붙여넣기]", "이 프로젝트 지식에 올라간 파일을 목록으로 정리해줘.\n[파일명 | 문서 종류 | 문서 번호·날짜(본문 기준) | 이 프로젝트에서 쓰는 곳 | 최신 여부 확인 필요]\n같은 문서의 여러 버전이 있으면 표시하고, 지울 후보를 제안만 해줘. 직접 판단해 지우라고 하지 마.", "아래 수정 전·후 지침을 비교해 변경 이력을 남겨줘.\n[날짜 | 바뀐 칸(역할·기준·판정·양식·수치·금지) | 수정 전 | 수정 후 | 바꾼 이유(내가 적은 것)]\n바꾼 이유는 내가 적은 내용만 쓰고, 없으면 ‘사유 미기재’로 둬.\n[수정 전 지침] [수정 후 지침] [바꾼 이유]", "아래 프로젝트 지침을 클로드 코드에서 쓸 CLAUDE.md 초안으로 바꿔줘.\n제목을 붙인 마크다운으로, 역할 · 기준 자료 위치 · 판정 기준 · 결과 양식 · 금지 순서로 쓰고,\n원본 파일은 수정하지 않는다는 규칙을 금지에 넣어줘.\n\n[프로젝트 지침 붙여넣기]", "연결한 폴더의 견적서를 하나씩 quote-review 스킬로 검토해줘.\n실행 전에 계획(읽을 파일 목록 · 만들 결과 파일 이름 · 저장 위치)을 먼저 보여주고 내 승인을 기다려.\n원본 파일은 수정·이동·삭제하지 말고, 결과는 [결과 폴더]에 업체별 검토서로 저장해줘.", "연결한 폴더의 파일 이름을 [규칙: 예) 날짜_문서종류_업체_버전]으로 바꾸려고 해.\n지금은 바꾸지 말고, [현재 이름 | 바꿀 이름 | 근거(본문에서 확인한 날짜·문서 종류)] 표로 계획만 보여줘.\n본문에서 날짜를 확인할 수 없는 파일은 ‘확인 필요’로 두고 이름을 짓지 마.", "[하려는 작업: 예) 견적서 폴더의 엑셀에서 업체·품목·금액만 뽑아 하나의 표로 모으기]\n바로 실행하지 말고 계획만 보여줘.\n1) 읽을 파일 2) 만들 파일과 위치 3) 원본을 수정하는지 여부 4) 내가 확인할 점\nCLAUDE.md의 금지 규칙을 지키고, 원본 파일은 바꾸지 마.", "[폴더] 안의 월별 엑셀 파일에서 [시트·열 이름]을 읽어 [집계 기준]으로 합친 표를 만드는 스크립트를 짜줘.\n원본 파일은 읽기만 하고, 결과는 새 파일 [결과 파일명]으로 저장해줘.\n처음에는 파일 두 개로만 시험하고, 결과 합계를 손으로 검산할 수 있게 중간 표도 같이 보여줘.", "오늘 Claude 교육에서 배운 것을 우리 팀원에게 10분 동안 전하려고 해.\n아래 메모로 ‘오늘 배운 것 3가지 / 우리 팀 업무에 바로 쓸 예시 2개 / 따라 해볼 프롬프트 1개 / 주의사항(민감정보·원문 대조)’ 구성의 안내문을 써줘.\n메모에 없는 기능·효과는 만들지 말고 ‘확인 필요’로 남겨줘.\n[교육 메모와 팀 업무 붙여넣기]", "우리 팀의 Claude 사용 가이드 초안을 1쪽으로 써줘. 팀 업무: [업무 설명]\n구성: 쓸 수 있는 업무 / 넣으면 안 되는 자료(고객·계약·인사·원가·개인정보) / 프로젝트·스킬 만들 때 규칙 / 결과 검수 규칙 / 문의처([부서명])\n회사 기준으로 정해지지 않은 항목은 만들지 말고 ‘회사 기준 확인 필요’로 남겨줘.", "같은 자료로 Gemini와 Claude가 만든 결과 A와 B를 비교해줘.\n[항목 | A 내용 | B 내용 | 원문 근거 | 원문과 맞는 쪽(근거가 있을 때만)]\n원문에 근거가 없는 차이는 ‘원문 확인 필요’로 남기고, 무조건 한쪽을 고르지 마.\n[원문 자료] [결과 A] [결과 B]", "아래 팀원들이 보낸 AI 활용 메모를 월간 사례 보고로 정리해줘.\n[업무 | 사용 기능(프로젝트·스킬·아티팩트 등) | 한 일 | 결과물 | 줄어든 시간(메모에 적힌 경우만) | 주의점 | 다른 팀 적용 가능성]\n메모에 없는 시간·수치는 비워 두고, 마지막에 다음 달 스킬로 만들어 볼 업무 3개를 제안해줘.\n[활용 메모 붙여넣기]", "아래 팀원들이 쓴 프롬프트를 팀 공유용 표준 양식으로 정리해줘.\n양식: 제목 / 언제 쓰나 / 어디서(프로젝트·스킬·일반 대화) / 넣을 자료 / 프롬프트 본문(바꿀 곳은 [대괄호]) / 검수 포인트 / 자료 주의\n뜻이 같은 프롬프트는 하나로 합치고, 원래 의도는 바꾸지 마.\n[팀원 프롬프트 붙여넣기]"];
+  var $ = function (s) { return document.querySelector(s); }, $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var cards = $$('.card'), groups = $$('.group');
+  var q = $('#q'), okonly = $('#okonly'), newonly = $('#newonly'), custonly = $('#custonly');
+  var st = { track: '', tools: [], units: [], ft: '', fk: '', cats: [] };
+  function load() { try { var s = JSON.parse(localStorage.getItem('bk-claude-lib') || 'null'); if (s && typeof s.track === 'string') st.track = s.track; } catch (e) {} }
+  function save() { try { localStorage.setItem('bk-claude-lib', JSON.stringify({ track: st.track })); } catch (e) {} }
+  function tog(a, v) { var i = a.indexOf(v); if (i > -1) a.splice(i, 1); else a.push(v); }
+  function eduF() { return st.units.length || st.ft || st.fk; }
+  function workF() { return st.cats.length || okonly.checked || newonly.checked || custonly.checked; }
+  function sync() {
+    $$('.trk').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.track === st.track ? 'true' : 'false'); });
+    $$('.chip.tool-f').forEach(function (b) { b.setAttribute('aria-pressed', st.tools.indexOf(b.dataset.tool) > -1 ? 'true' : 'false'); });
+    $$('.chip.unit').forEach(function (b) { b.setAttribute('aria-pressed', st.units.indexOf(b.dataset.unit) > -1 ? 'true' : 'false'); });
+    $$('.chip.ft').forEach(function (b) { b.setAttribute('aria-pressed', st.ft === b.dataset.ft ? 'true' : 'false'); });
+    $$('.chip.fk').forEach(function (b) { b.setAttribute('aria-pressed', st.fk === b.dataset.file ? 'true' : 'false'); });
+    $$('.chip.cat').forEach(function (b) { b.setAttribute('aria-pressed', st.cats.indexOf(b.dataset.cat) > -1 ? 'true' : 'false'); });
+    $$('.fg-edu').forEach(function (g) { g.hidden = st.track === 'work'; });
+    $$('.fg-work').forEach(function (g) { g.hidden = st.track === 'edu'; });
+  }
+  function apply() {
+    var terms = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean), shown = 0;
+    var ef = eduF(), wf = workF();
+    cards.forEach(function (c) {
+      var d = c.dataset, ok = true;
+      if (st.track && d.track !== st.track) ok = false;
+      if (ok && st.tools.length) ok = st.tools.some(function (t) { return d.tools.split('|').indexOf(t) > -1; });
+      if (ok && d.track === 'edu') {
+        if (wf) ok = false;
+        if (ok && st.units.length) ok = st.units.indexOf(d.unit) > -1;
+        if (ok && st.ft) ok = d.ft === st.ft;
+        if (ok && st.fk) ok = st.fk.split(',').some(function (k) { return d.fk.split(',').indexOf(k) > -1; });
+      }
+      if (ok && d.track === 'work') {
+        if (ef) ok = false;
+        if (ok && st.cats.length) ok = st.cats.indexOf(d.cat) > -1;
+        if (ok && okonly.checked) ok = d.sens === 'ok';
+        if (ok && newonly.checked) ok = d.new === '1';
+        if (ok && custonly.checked) ok = d.cf === '1';
+      }
+      if (ok && terms.length) ok = terms.every(function (t) { return d.q.indexOf(t) > -1; });
+      c.hidden = !ok; if (ok) shown++;
+    });
+    groups.forEach(function (g) { g.hidden = !g.querySelector('.card:not([hidden])'); });
+    $$('.divider, .worknote').forEach(function (v) { v.hidden = !document.querySelector('.group[data-track="' + v.dataset.track + '"]:not([hidden])'); });
+    $('#files').hidden = st.track === 'work';
+    $('#count').textContent = shown + '개 표시 / 전체 ' + cards.length + '개';
+    $('#empty').hidden = shown > 0; sync(); save();
+  }
+  $$('.trk').forEach(function (b) { b.addEventListener('click', function () { st.track = b.dataset.track; apply(); }); });
+  $$('.chip.tool-f').forEach(function (b) { b.addEventListener('click', function () { tog(st.tools, b.dataset.tool); apply(); }); });
+  $$('.chip.unit').forEach(function (b) { b.addEventListener('click', function () { tog(st.units, b.dataset.unit); apply(); }); });
+  $$('.chip.ft').forEach(function (b) { b.addEventListener('click', function () { st.ft = st.ft === b.dataset.ft ? '' : b.dataset.ft; st.fk = ''; apply(); }); });
+  $$('.chip.fk').forEach(function (b) { b.addEventListener('click', function () { st.fk = st.fk === b.dataset.file ? '' : b.dataset.file; st.ft = ''; apply(); }); });
+  $$('.chip.cat').forEach(function (b) { b.addEventListener('click', function () { tog(st.cats, b.dataset.cat); apply(); }); });
+  [q].forEach(function (el) { el.addEventListener('input', apply); });
+  [okonly, newonly, custonly].forEach(function (el) { el.addEventListener('change', apply); });
+  function clearAll() { st.tools = []; st.units = []; st.ft = ''; st.fk = ''; st.cats = []; q.value = ''; okonly.checked = newonly.checked = custonly.checked = false; }
+  $('#reset').addEventListener('click', function () { clearAll(); st.track = ''; apply(); });
+  $$('.step').forEach(function (b) { b.addEventListener('click', function () { clearAll(); st.track = ''; q.value = b.dataset.q; apply(); $('.layout').scrollIntoView({ block: 'start' }); }); });
+  $$('.fbtn').forEach(function (b) { b.addEventListener('click', function () { clearAll(); st.track = 'edu'; st.fk = b.dataset.file; apply(); $('.layout').scrollIntoView({ block: 'start' }); }); });
+  function setOpen(i, open) {
+    var w = document.getElementById('pw-' + i), ck = document.getElementById('ck-' + i), b = document.querySelector('.more[data-i="' + i + '"]');
+    w.dataset.open = open ? 'true' : 'false'; ck.hidden = !open; b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.firstChild.nodeValue = open ? '접기 ' : '펼치기 ';
+  }
+  $$('.more').forEach(function (b) { b.addEventListener('click', function () { setOpen(b.dataset.i, b.getAttribute('aria-expanded') !== 'true'); }); });
+  $('#openall').addEventListener('click', function () { $$('.card:not([hidden]) .more').forEach(function (b) { setOpen(b.dataset.i, true); }); });
+  $('#closeall').addEventListener('click', function () { $$('.more').forEach(function (b) { setOpen(b.dataset.i, false); }); });
+  $$('.bridge').forEach(function (a) { a.addEventListener('click', function (ev) {
+    ev.preventDefault(); var id = a.dataset.go; clearAll(); st.track = ''; apply();
+    var c = document.getElementById(id); if (!c) return; var bt = c.querySelector('.more'); setOpen(bt.dataset.i, true);
+    c.scrollIntoView({ block: 'start' }); c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 1800);
+  }); });
+  function selectText(el) { try { var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) {} }
+  $$('.copy').forEach(function (b) { b.addEventListener('click', function () {
+    var i = +b.dataset.i, pre = document.getElementById('pr-' + i);
+    function done(m) { b.textContent = m; b.classList.add('done'); setTimeout(function () { b.textContent = '복사'; b.classList.remove('done'); }, 1600); }
+    try { navigator.clipboard.writeText(RAW[i]).then(function () { done('복사됨'); }, function () { selectText(pre); done('Ctrl+C'); }); } catch (e) { selectText(pre); done('Ctrl+C'); }
+  }); });
+  load(); apply();
+})();
+</script>
+</body></html>
